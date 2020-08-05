@@ -1,8 +1,8 @@
-# Install script for directory: C:/Users/38093/esp/projects/hardware/t00
+# Install script for directory: /Users/vsyvenuk/projects/hard/t00
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "C:/Program Files (x86)/hello-world")
+  set(CMAKE_INSTALL_PREFIX "/Users/vsyvenuk/.brew")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -32,9 +32,14 @@ if(NOT DEFINED CMAKE_CROSSCOMPILING)
   set(CMAKE_CROSSCOMPILING "TRUE")
 endif()
 
+# Set default install directory permissions.
+if(NOT DEFINED CMAKE_OBJDUMP)
+  set(CMAKE_OBJDUMP "/Users/vsyvenuk/.espressif/tools/xtensa-esp32-elf/esp-2019r2-8.2.0/xtensa-esp32-elf/bin/xtensa-esp32-elf-objdump")
+endif()
+
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("C:/Users/38093/esp/projects/hardware/t00/build/esp-idf/cmake_install.cmake")
+  include("/Users/vsyvenuk/projects/hard/t00/build/esp-idf/cmake_install.cmake")
 
 endif()
 
@@ -46,5 +51,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "C:/Users/38093/esp/projects/hardware/t00/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/Users/vsyvenuk/projects/hard/t00/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
