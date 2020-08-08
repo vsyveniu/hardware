@@ -1,218 +1,90 @@
 #include "main.h"
   
-#define LED_27 27
-#define LED_26 26
-#define LEDC_SPEED_MODE LEDC_LOW_SPEED_MODE
-#define LEDC_TIMER LEDC_TIMER_1
-#define LEDC_TEST_DUTY         (8000)
+#define LED_1 27
+#define LED_2 26
+#define LEDC_SPEED_MODE 		LEDC_HIGH_SPEED_MODE
+#define LEDC_DUTY  				(1023)
+#define LEDC_DUTY_RESOLUTION	LEDC_TIMER_10_BIT
+#define LEDC_FREQENCY			(1000)
 
 
-void led27(){
-	uint32_t duty;
+void pulse_led1(ledc_channel_config_t ledc_channel){
 
- 	ledc_timer_config_t ledc_timer = {
- 		.speed_mode = LEDC_SPEED_MODE,
- 		.timer_num = LEDC_TIMER_1,
- 		.duty_resolution = LEDC_TIMER_10_BIT,
- 		.freq_hz = 300,
- 	};
+	// uint32_t duty;
 
- 	ledc_timer_config_t ledc_timer_2 = {
- 		.speed_mode = LEDC_SPEED_MODE,
- 		.timer_num = LEDC_TIMER_2,
- 		.duty_resolution = LEDC_TIMER_15_BIT,
- 		.freq_hz = 300,
- 	};
-
-	ledc_timer_config(&ledc_timer);
-	ledc_timer_config(&ledc_timer_2);			
-
-	ledc_channel_config_t ledc_channel = {
-		.channel = LEDC_CHANNEL_0,
-		.speed_mode = LEDC_SPEED_MODE,
-		.gpio_num = LED_27,
-		.duty = 0,
-		.timer_sel = LEDC_TIMER_1,
-		.hpoint = 0,
-	};
-
-	ledc_channel_config_t ledc_channel_2 = {
-		.channel = LEDC_CHANNEL_1,
-		.speed_mode = LEDC_SPEED_MODE,
-		.gpio_num = LED_26,
-		.duty = 0,
-		.timer_sel = LEDC_TIMER_2,
-		.hpoint = 0,
-	};
-
-
-	 ledc_channel_config(&ledc_channel);
-	 ledc_channel_config(&ledc_channel_2);
-
-	ledc_fade_func_install(0);
-
-	 while (true){ 
-
-		 ledc_set_fade_with_time(ledc_channel.speed_mode, ledc_channel.channel, 1023, 4000);
-		ledc_fade_start(ledc_channel.speed_mode, ledc_channel.channel, LEDC_FADE_NO_WAIT);
-
-		vTaskDelay(1000 /portTICK_PERIOD_MS);
-
-/* 		ledc_set_fade_with_time(ledc_channel.speed_mode, ledc_channel.channel, 1, 4000);
-		ledc_fade_start(ledc_channel.speed_mode, ledc_channel.channel, LEDC_FADE_NO_WAIT); */
-	 /* 	for(duty = 0; duty < 1023; duty++)
-	 		{*/
+ // 	for(duty = 0; duty < LEDC_DUTY; duty++)
+ // 	{
 				 	
-				
-/* 
-	 			ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, duty);
-	 		 	ets_delay_us(1000);
-				ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel); */
- 	 	//	}
-			for(duty = 1023; duty > 0; duty--)
-	 		{ 
- 
-				
+	// 	ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, duty);
+	//  	ets_delay_us(220);
+	// 	ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
+	// }
 
-	 			 ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, duty);
-			 	ets_delay_us(1000);
-				ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel); 
-			}
-	 } 
+	// for(duty = LEDC_DUTY; duty > 0; duty--)
+	// {  
+	// 	ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, duty);
+	// 	ets_delay_us(220);
+	// 	ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
+	// }
+	// ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, 0);
+	// ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
+
+
+
+	ledc_set_fade_with_time(ledc_channel.speed_mode, ledc_channel.channel, LEDC_DUTY, 2000);
+	ledc_fade_start(ledc_channel.speed_mode, ledc_channel.channel, LEDC_FADE_WAIT_DONE);
+	ledc_set_fade_with_time(ledc_channel.speed_mode, ledc_channel.channel, 0, 2000);
+	ledc_fade_start(ledc_channel.speed_mode, ledc_channel.channel, LEDC_FADE_WAIT_DONE);
 }
 
 
-void led26(){
+void pulse_led2(){
 
-		dac_output_enable(DAC_CHANNEL_2);
+	int volt;
 
-		int volt;
+	dac_output_enable(DAC_CHANNEL_2);
 
-		for (volt = 0; volt  < 255; volt++)
-			 {
-				 dac_output_voltage(DAC_CHANNEL_2, volt);
-				 ets_delay_us(10000);
-			 }
-			 for (volt = 255; volt  > 0; volt--)
-			 {
-				 dac_output_voltage(DAC_CHANNEL_2, volt);
-				 ets_delay_us(10000);
-			 }
+	for (volt = 0; volt  < 255; volt++)
+	{
+		dac_output_voltage(DAC_CHANNEL_2, volt);
+		ets_delay_us(8000);
+	}
+
+	for (volt = 255; volt  > 0; volt--)
+	{
+		dac_output_voltage(DAC_CHANNEL_2, volt);
+		ets_delay_us(8000);
+	}
 			 
 }
 
 void app_main(void)
 {
-	
+	ledc_timer_config_t ledc_timer = {
+ 		.speed_mode = LEDC_SPEED_MODE,
+ 		.timer_num = LEDC_TIMER_1,
+ 		.duty_resolution = LEDC_DUTY_RESOLUTION,
+ 		.freq_hz = LEDC_FREQENCY,
+ 	};
 
+	ledc_timer_config(&ledc_timer);		
 
-	/*  dac_cw_config_t dac_conf = {
-	 	.en_ch = DAC_CHANNEL_2,
-	 	.dac_cw_scale_t = DAC_CW_SCALE_8,
-	 	.dac_cw_phase_r = DAC_CW_PHASE_180,
-	 	.freq = 300,
-	 	.offset = 20,
+	ledc_channel_config_t ledc_channel = {
+		.channel = LEDC_CHANNEL_0,
+		.speed_mode = LEDC_SPEED_MODE,
+		.gpio_num = LED_1,
+		.duty = 0,
+		.timer_sel = LEDC_TIMER_1,
+		.hpoint = 0,
+	};
 
-	 }
- */
-	 	// ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, ch);
-	 	// 	ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
-	 	// 	ESP_LOGI("dutyloop", "%d", ledc_channel.duty);
-	 	// 	ESP_LOGI("duteget", "%d", ledc_get_duty(ledc_channel.speed_mode, ledc_channel.channel));
+	ledc_channel_config(&ledc_channel);
+	ledc_fade_func_install(0);
 
-
-	 	// ESP_LOGI("channel", "%d", LEDC_CHANNEL_0);
-	 	// ESP_LOGI("timer", "%d", ledc_timer.freq_hz);
-
-
-	 	
-	 	//ESP_LOGI("duty", "%d", ledc_channel.duty);
-	 
-	 	//ESP_LOGI("duty", "%d", ledc_channel.duty);
-
-	// 
-
-
-//	 dac_output_enable(DAC_CHANNEL_2);
-	// dac_cw_generator_enable();
-	// dac_cw_generator_config(&dac_conf);
-	 
-	
-
-	xTaskCreate(&led27, "pulse led 27", 2048, "task 1", 1, NULL);
-	//xTaskCreatePinnedToCore(&led26, "pulse led 26", 2048, "task 2", 1, NULL, 1);
-
-	/*  while (true){ 
-
-		 	for (volt = 0; volt  < 255; volt++)
-			 {
-				 dac_output_voltage(DAC_CHANNEL_2, volt);
-				 ets_delay_us(10000);
-			 }
-			 for (volt = 255; volt  > 0; volt--)
-			 {
-				 dac_output_voltage(DAC_CHANNEL_2, volt);
-				 ets_delay_us(10000);
-			 }
-			 
-	 		
-	 	for(duty = 0; duty < 1023; duty++)
-	 		{
-
-	 			ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, duty);
-	 		 	ets_delay_us(1000);
-				ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
-
-
-				//ledc_set_fade_with_time(ledc_channel_2.speed_mode, ledc_channel_2.channel, duty, 2);
-				//ledc_fade_start(ledc_channel_2.speed_mode, ledc_channel_2.channel, LEDC_FADE_NO_WAIT);
-
-				//ledc_set_freq();
-		
-				// ESP_LOGI("duty", "%d", ledc_get_duty(ledc_channel.speed_mode, ledc_channel.channel));
-				//ESP_LOGI("duty", "%d", ledc_get_freq(ledc_channel.speed_mode, ledc_timer.timer_num));
-				// ledc_set_fade_with_time(ledc_channel_2.speed_mode, ledc_channel_2.channel, duty, 7);
-				// ledc_fade_start(ledc_channel_2.speed_mode, ledc_channel_2.channel, LEDC_FADE_NO_WAIT);
-
-			}
-			//ESP_LOGI("duty", "%d", ledc_get_duty(ledc_channel.speed_mode, ledc_channel.channel));
-			//ets_delay_us(300);
-			for(duty = 1023; duty > 0; duty--)
-	 		{
-
-	 			ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, duty);
-			 	ets_delay_us(1000);
-				ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
-
-
-				// ledc_set_fade_with_time(ledc_channel_2.speed_mode, ledc_channel_2.channel, duty, 7);
-				// ledc_fade_start(ledc_channel_2.speed_mode, ledc_channel_2.channel, LEDC_FADE_NO_WAIT);
-				
-
-				//ledc_set_freq();
-		
-				// ESP_LOGI("duty", "%d", ledc_get_duty(ledc_channel.speed_mode, ledc_channel.channel));
-				//ESP_LOGI("duty", "%d", ledc_get_freq(ledc_channel.speed_mode, ledc_timer.timer_num));
-			}
-			//ESP_LOGI("duty", "%d", ledc_get_duty(ledc_channel.speed_mode, ledc_channel.channel));
-
-
-
-
-
-
-
-
-
-	 		//ledc_set_fade_with_time(ledc_channel.speed_mode, ledc_channel.channel, LEDC_TEST_DUTY, 8000);
-	 		//ledc_fade_start(ledc_channel.speed_mode, ledc_channel.channel, LEDC_FADE_NO_WAIT);
-	 		//ledc_stop(ledc_channel.speed_mode, ledc_channel.channel, 0);
-
-	 		// ledc_set_fade_with_time(ledc_channel.speed_mode, ledc_channel.channel, 0, 8000);
-	 		// ledc_fade_start(ledc_channel.speed_mode, ledc_channel.channel, LEDC_FADE_NO_WAIT);
-
-	  } */
-
+	while(true){
+		pulse_led1(ledc_channel);
+		pulse_led2();
+	}
 }
 
 
