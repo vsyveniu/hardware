@@ -10,6 +10,8 @@
 #include <esp32/rom/ets_sys.h>
 #include <driver/dac.h>
 #include <freertos/queue.h>
+#include "esp_err.h"
+#include "driver/timer.h"
 
 
 
