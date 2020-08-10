@@ -32,11 +32,14 @@ void butt1_pushed()
 
 	while (true)
 	{
+
 		
 		if(xQueueReceive(interruptQueue, &pin, portMAX_DELAY))
 		{
 			count = 0;
 
+			ESP_LOGI("level", "%d", gpio_get_level(pin));
+				ESP_LOGI("count", "%d", count);
 			while(gpio_get_level(pin) != 0 && count > 1){
 				vTaskDelay(20 / portTICK_PERIOD_MS);
 				if(gpio_get_level(pin) == 0)
@@ -44,7 +47,7 @@ void butt1_pushed()
 				else
 					vTaskDelay(20 / portTICK_PERIOD_MS);
 			}
-			
+
 			butt_1_on = !butt_1_on;
 
 			gpio_set_level(LED_1, butt_1_on);
