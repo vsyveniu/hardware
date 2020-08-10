@@ -28,6 +28,7 @@ void butt1_pushed()
 {
 	uint32_t pin;
 	int butt_1_on = 0;
+	int butt_state = 1;
 	int count;
 
 	while (true)
@@ -38,7 +39,33 @@ void butt1_pushed()
 		{
 			count = 0;
 
-			ESP_LOGI("level", "%d", gpio_get_level(pin));
+			if(gpio_get_level(pin) == 0)
+			{
+				if(butt_state == 1){
+					if(count < 70){
+						count++;
+						
+					}
+					else{
+						butt_state = 0;
+						butt_1_on = !butt_1_on;
+						count = 0;
+						ESP_LOGI("state", "%d", count);
+					}
+				}
+				else{
+					if(count > 0){
+						count--;
+					}
+					else{
+						count = 0;
+						butt_state = 1;
+					}
+				}
+				
+			}
+
+			/* ESP_LOGI("level", "%d", gpio_get_level(pin));
 				ESP_LOGI("count", "%d", count);
 			while(gpio_get_level(pin) != 0 && count > 1){
 				vTaskDelay(20 / portTICK_PERIOD_MS);
@@ -46,9 +73,9 @@ void butt1_pushed()
 					count++;
 				else
 					vTaskDelay(20 / portTICK_PERIOD_MS);
-			}
+			} */
 
-			butt_1_on = !butt_1_on;
+			
 
 			gpio_set_level(LED_1, butt_1_on);
 		}
