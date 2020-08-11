@@ -13,7 +13,6 @@ void app_main(void)
 
   while (true){
     gpio_set_level(PIN_OUT_0, 1);
-    gpio_set_level(PIN_OUT_0, 1);
     gpio_set_level(PIN_OUT_1, 1);
     gpio_set_level(PIN_OUT_2, 1);
   }

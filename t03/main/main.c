@@ -28,57 +28,106 @@ void butt1_pushed()
 {
 	uint32_t pin;
 	int butt_1_on = 0;
-	int butt_state = 1;
 	int count;
+	//double butt_sec = 0.1;
 
 	while (true)
 	{
+		//ESP_LOGI("butt_sec", "%f", butt_sec);
 
-		
+		//double time_sec = 0;
+		//uint64_t time_val = 0;
 		if(xQueueReceive(interruptQueue, &pin, portMAX_DELAY))
 		{
-			count = 0;
+			//butt_state = 1;
 
-			if(gpio_get_level(pin) == 0)
-			{
-				if(butt_state == 1){
-					if(count < 70){
-						count++;
-						
-					}
-					else{
-						butt_state = 0;
-						butt_1_on = !butt_1_on;
-						count = 0;
-						ESP_LOGI("state", "%d", count);
-					}
-				}
-				else{
-					if(count > 0){
-						count--;
-					}
-					else{
-						count = 0;
-						butt_state = 1;
-					}
-				}
+			//  ESP_LOGI("level", "%d", gpio_get_level(pin));
+			
+			
+
+			// //timer_get_counter_time_sec(TIMER_GROUP_0, 0, &time_sec);
+		
+			// 	/* code */
+			// timer_start(TIMER_GROUP_0, TIMER_0);
+			// timer_get_counter_value(TIMER_GROUP_0, 0, &time_val);
+			// timer_get_counter_time_sec(TIMER_GROUP_0, 0, &time_sec);
+
+			// if(gpio_get_level(pin) == 1){
 				
-			}
+					
+			// 	butt_sec = time_sec;
+			// 	//ESP_LOGI("asd", "%d", butt_sec);
+			// 	timer_set_alarm_value(TIMER_GROUP_0, TIMER_0, time_val);
+			// 	timer_set_alarm(TIMER_GROUP_0, TIMER_0, TIMER_ALARM_EN);
 
-			/* ESP_LOGI("level", "%d", gpio_get_level(pin));
-				ESP_LOGI("count", "%d", count);
-			while(gpio_get_level(pin) != 0 && count > 1){
+			// }
+			
+			// if(gpio_get_level(pin) == 0){
+			
+			// }
+			// else{
+				
+			// }
+			
+			// 		printf("%" PRIu64 "\n", time_val);
+			// ESP_LOGI("timer", "%f", time_sec);
+					
+
+			// }while(gpio_get_level(pin) != 0 && time_val >= 100);
+					
+			// while(gpio_get_level(pin) = 0){
+			// 	vTaskDelay(20 / portTICK_PERIOD_MS);
+			// 	if(gpio_get_level(pin) == 0)
+			// 		count++;
+			// 	else
+			// 		vTaskDelay(20 / portTICK_PERIOD_MS);
+			// }
+
+			// do{
+			// 	vTaskDelay(20 / portTICK_PERIOD_MS);
+			// }while(gpio_get_level(pin) != 1);
+
+			// ESP_LOGI("level----", "%d", gpio_get_level(pin));
+			// printf("%s\n", "--------------");
+			// if(gpio_get_level(pin) != 0){
+			// 	ESP_LOGI("level", "%d", gpio_get_level(pin));
+			// 	count = 0;
+				//vTaskDelay(20 / portTICK_PERIOD_MS);
+				// while(gpio_get_level(pin) != 0 && count > 1){
+				// 	vTaskDelay(20 / portTICK_PERIOD_MS);
+				// 	if(gpio_get_level(pin) == 0){
+				// 		count++;
+
+				// 	}
+				// 	else
+				// 		vTaskDelay(20 / portTICK_PERIOD_MS);
+				// }
+
+				// timer_set_alarm_value(TIMER_GROUP_0, TIMER_0, time_val);
+				// timer_set_alarm(TIMER_GROUP_0, TIMER_0, TIMER_ALARM_EN);
+				//if(time_val > 100)
+			count = 0;
+			while(gpio_get_level(pin) != 1 && count > 1){
 				vTaskDelay(20 / portTICK_PERIOD_MS);
 				if(gpio_get_level(pin) == 0)
 					count++;
 				else
 					vTaskDelay(20 / portTICK_PERIOD_MS);
-			} */
+			}
 
-			
+					butt_1_on = !butt_1_on;
 
-			gpio_set_level(LED_1, butt_1_on);
+
+				gpio_set_level(LED_1, butt_1_on);
+				// timer_set_alarm_value(TIMER_GROUP_0, TIMER_0, time_val);
+				// timer_set_alarm(TIMER_GROUP_0, TIMER_0, TIMER_ALARM_EN);
+			//}
 		}
+
+			//butt_state = 0;
+		
+	
+
 	}
 }
 void butt2_pushed()
@@ -94,7 +143,7 @@ void butt2_pushed()
 		{
 
 			count = 0;
-			while(gpio_get_level(pin) != 0 && count > 1){
+			while(gpio_get_level(pin) != 1 && count > 1){
 				vTaskDelay(20 / portTICK_PERIOD_MS);
 				if(gpio_get_level(pin) == 0)
 					count++;
@@ -103,6 +152,7 @@ void butt2_pushed()
 			}
 
 			butt_2_on = !butt_2_on;
+
 
 			gpio_set_level(LED_2, butt_2_on);
 			
@@ -116,14 +166,14 @@ void app_main(void)
 	gpio_config_t butt_1_conf = {
 		.pin_bit_mask = GPIO_SEL_39,
 		.mode = GPIO_MODE_INPUT,
-		.pull_up_en = GPIO_PULLUP_ENABLE,
+		.pull_up_en = GPIO_PULLUP_DISABLE,
 		.pull_down_en = GPIO_PULLDOWN_DISABLE,
 		.intr_type = GPIO_INTR_POSEDGE,
 	};
 	gpio_config_t butt_2_conf = {
 		.pin_bit_mask = GPIO_SEL_18,
 		.mode = GPIO_MODE_INPUT,
-		.pull_up_en = GPIO_PULLUP_ENABLE,
+		.pull_up_en = GPIO_PULLUP_DISABLE,
 		.pull_down_en = GPIO_PULLDOWN_DISABLE,
 		.intr_type = GPIO_INTR_POSEDGE,
 	};
@@ -132,21 +182,24 @@ void app_main(void)
 	gpio_config(&butt_1_conf);
 	gpio_config(&butt_2_conf);
 
-	// timer_config_t timer_conf= {
-	// 	.alarm_en = TIMER_ALARM_EN,
-	// 	.counter_en = true,
-	// 	.counter_dir = TIMER_COUNT_UP,
-	// 	.auto_reload = false,
-	// 	.divider = 16,
-	// 	.intr_type = TIMER_INTR_LEVEL,
+	timer_config_t timer_conf= {
+		.alarm_en = TIMER_ALARM_EN,
+		.counter_en = false,
+		.counter_dir = TIMER_COUNT_UP,
+		.auto_reload = true,
+		.divider = 16,
+		.intr_type = TIMER_INTR_LEVEL,
 
-	// };
+	};
+
+
 
 
 	// uint64_t time_val;
 	// uint64_t alarm_val;
 	// double time_sec;
-	// timer_init(TIMER_GROUP_0, TIMER_0, &timer_conf);
+	timer_init(TIMER_GROUP_0, TIMER_0, &timer_conf);
+	
 
 	// //timer_set_counter_value(TIMER_GROUP_0, TIMER_0, 0x00000000ULL);
 
@@ -158,7 +211,7 @@ void app_main(void)
 	// //timer_enable_intr(TIMER_GROUP_0, TIMER_0);
 	//  if(err != ESP_OK){
 	//  	abort();
-	//  }
+	//  }s
 
 	// //timer_start(TIMER_GROUP_0, 0);
 
@@ -187,15 +240,6 @@ void app_main(void)
 
 	 gpio_install_isr_service(0);
 
-	 // button_data data1 = {
-	 // 	.level = BUTT_1,
-	 // 	.num = 39,
-	 // }
-	 // button_data data2 = {
-	 // 	.level = BUTT_2,
-	 // 	.num = 18,
-	 // }
-
 
 	gpio_isr_handler_add(BUTT_1, butt1_handler, (void *)BUTT_1);
 	gpio_isr_handler_add(BUTT_2, butt2_handler, (void *)BUTT_2);
@@ -212,9 +256,9 @@ void app_main(void)
 	xTaskCreate(butt1_pushed, "button 1 task", 2048, NULL, 1, NULL);
 	xTaskCreate(butt2_pushed, "button 2 task", 2048, NULL, 1, NULL);
 
-	// while (true){
+	while (true){
 
-	// }
+	}
 }
 
 
