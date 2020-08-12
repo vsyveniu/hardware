@@ -7,12 +7,12 @@ void sendStart(){
 
 	gpio_set_direction(DHT_PIN, GPIO_MODE_OUTPUT);
 	gpio_set_level(DHT_PIN, 0);
-	vTaskDelay(25 / portTICK_PERIOD_MS);
-	//ets_delay_us(22000);
+	//vTaskDelay(25 / portTICK_PERIOD_MS);
+	ets_delay_us(22000);
 	// printf("%d\n", gpio_get_level(DHT_PIN));
 	// printf("%s\n", "level 0 -------");
 	gpio_set_level(DHT_PIN, 1);
-	ets_delay_us(40);
+	ets_delay_us(53);
 	// printf("%s\n", " level 1------");
 
 	gpio_set_direction(DHT_PIN, GPIO_MODE_INPUT);
@@ -26,75 +26,55 @@ int get_humidity(){
 
 	int count = 0;
 
+	printf("%d\n", gpio_get_level(DHT_PIN));
+
+
+	ets_delay_us(400);
+
+	// while(gpio_get_level(DHT_PIN) == 1){
+	// 	if(count > 400){
+	// 		//ESP_LOGI("req counter", "%d, %s", count, "timeout");
+	// 		printf("%s\n", "timeout 40us");
+	// 		return ESP_ERR_TIMEOUT;
+	// 	}
+	// 	// if(gpio_get_level(DHT_PIN) == 0){
+	// 	// 	printf("%s\n", "response 40 us");
+	// 	// 	break;
+	// 	// }
+	// 	count++;
+	// 	ets_delay_us(1);
+	// }
+	printf("%d%s\n", gpio_get_level(DHT_PIN), "     dht11 send response");
+
+
+
 	//printf("%d\n", gpio_get_level(DHT_PIN));
 
-	// while(req_count_high){
-	// 	if(req_count_high > 40){
-	// 		ESP_LOGI("req counter", "%d, %s", req_count_high, "timeout");
-	// 		return ESP_ERR_TIMEOUT;
-	// 	}
-	// 	if(gpio_get_level(DHT_PIN) == 0){
-	// 		printf("%s\n", "response 40 us");
-	// 		break;
-	// 	}
-	// 	req_count_high++;
-	// 	ets_delay_us(1);
-	// }
+	count = 0;
+
+
+	ets_delay_us(400);
+	printf("%d\n", gpio_get_level(DHT_PIN));
+	ets_delay_us(400);
 	printf("%d\n", gpio_get_level(DHT_PIN));
 
-
-	do{
-		ets_delay_us(1);
-		count++;
-		if(count > 40){
-			printf("%s\n", "timeout wait response 40 us");
-	  		return ESP_ERR_TIMEOUT;
-		}
-		// if(req_count_high > 40){
-		// 		printf("%s\n", "timeout wait response 40 us");
-	 // 		return ESP_ERR_TIMEOUT;
-		// }
-		// req_count_high++;
-		//ets_delay_us(1);
-		printf("%s\n", "delay 40us");
-	}while(gpio_get_level(DHT_PIN) != 0);
-
-
-	printf("%d\n", gpio_get_level(DHT_PIN));
-
-	int req_count_low = 0;
 	// while(gpio_get_level(DHT_PIN) == 0){
-	// 	if(resp_count_low > 80){
-	// 		ESP_LOGI("resp low counter", "%d, %s", resp_count_low, "timeout");
+	// 	if(count > 120){
+	// 		printf("%s\n", "timeout 80us");
 	// 		return ESP_ERR_TIMEOUT;
 	// 	}
-	// 	if(gpio_get_level(DHT_PIN) == 1){
-	// 		printf("%s\n", "response2");
-	// 		break;
-	// 	}
-	// 	resp_count_low++;
+	// 	// if(gpio_get_level(DHT_PIN) == 1){
+	// 	// 	printf("%s\n", "response2");
+	// 	// 	break;
+	// 	// }
+	// 	count++;
 	// 	ets_delay_us(1);
 	// }
 
-	do{
-		ets_delay_us(5);
-		ets_delay_us(1);
-		count++;
-		if(count > 40){
-			printf("%s\n", "timeout wait response 40 us");
-	  		return ESP_ERR_TIMEOUT;
-		}
-		// if(req_count_high > 40){
-		// 		printf("%s\n", "timeout wait response 40 us");
-	 // 		return ESP_ERR_TIMEOUT;
-		// }
-		// req_count_high++;
-		//ets_delay_us(1);
-		printf("%s\n", "delay low 80 us");
-	}while(gpio_get_level(DHT_PIN) != 1);
+	
 
 
-	printf("%d\n", gpio_get_level(DHT_PIN));
+	//printf("%d\n", gpio_get_level(DHT_PIN));
 	// do{
 	// 	if(req_count_low > 80){
 	// 			printf("%s\n", "timeout low  response 80 us");
@@ -107,7 +87,6 @@ int get_humidity(){
 
 
 	//printf("%d\n", gpio_get_level(DHT_PIN));
-	 int resp_count_high = 0;
 	// //printf("%d\n", gpio_get_level(DHT_PIN));
 
 	// while(gpio_get_level(DHT_PIN) == 1){
