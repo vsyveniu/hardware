@@ -106,19 +106,49 @@ void butt1_pushed()
 				// timer_set_alarm_value(TIMER_GROUP_0, TIMER_0, time_val);
 				// timer_set_alarm(TIMER_GROUP_0, TIMER_0, TIMER_ALARM_EN);
 				//if(time_val > 100)
-			count = 0;
-			while(gpio_get_level(pin) != 1 && count > 1){
-				vTaskDelay(20 / portTICK_PERIOD_MS);
-				if(gpio_get_level(pin) == 0)
-					count++;
-				else
-					vTaskDelay(20 / portTICK_PERIOD_MS);
-			}
+			// count = 0;
+			// while(gpio_get_level(pin) != 1 && count > 1){
+			// 	vTaskDelay(20 / portTICK_PERIOD_MS);
+			// 	if(gpio_get_level(pin) == 0)
+			// 		count++;
+			// 	else
+			// 		vTaskDelay(20 / portTICK_PERIOD_MS);
+			// }
 
-					butt_1_on = !butt_1_on;
+			// 		butt_1_on = !butt_1_on;
 
 
-				gpio_set_level(LED_1, butt_1_on);
+			// 	gpio_set_level(LED_1, butt_1_on);
+			butt_1_on = !butt_1_on;
+			
+			gpio_set_level(LED_1, butt_1_on);
+
+			gpio_intr_disable(pin);
+
+			int count = 0;
+			
+			// while(gpio_get_level(pin) != 1 && count > 1){
+			// 	vTaskDelay(20 / portTICK_PERIOD_MS);
+			// 	if(gpio_get_level(pin) == 0)
+			// 		count++;
+			// 	else
+			// 		vTaskDelay(20 / portTICK_PERIOD_MS);
+			// }
+			// while(count < 30){
+			// 	if(gpio_get_level(pin) == 1){
+			// 		count++;
+			// 	}
+			// 	if(gpio_get_level(pin) == 0){
+			// 		count = 0;
+			// 		ets_delay_us(1000);
+
+			// 	}
+			// }
+
+			vTaskDelay(30 / portTICK_PERIOD_MS);
+	
+
+			gpio_intr_enable(pin);
 				// timer_set_alarm_value(TIMER_GROUP_0, TIMER_0, time_val);
 				// timer_set_alarm(TIMER_GROUP_0, TIMER_0, TIMER_ALARM_EN);
 			//}
@@ -142,19 +172,50 @@ void butt2_pushed()
 		if(xQueueReceive(interruptQueue2, &pin, portMAX_DELAY))
 		{
 
-			count = 0;
-			while(gpio_get_level(pin) != 1 && count > 1){
-				vTaskDelay(20 / portTICK_PERIOD_MS);
-				if(gpio_get_level(pin) == 0)
-					count++;
-				else
-					vTaskDelay(20 / portTICK_PERIOD_MS);
-			}
+			// count = 0;
+			// while(gpio_get_level(pin) != 1 && count > 1){
+			// 	vTaskDelay(20 / portTICK_PERIOD_MS);
+			// 	if(gpio_get_level(pin) == 0)
+			// 		count++;
+			// 	else
+			// 		vTaskDelay(20 / portTICK_PERIOD_MS);
+			// }
 
-			butt_2_on = !butt_2_on;
+			// butt_2_on = !butt_2_on;
 
 
 			gpio_set_level(LED_2, butt_2_on);
+
+				butt_2_on = !butt_2_on;
+			
+			gpio_set_level(LED_2, butt_2_on);
+
+			gpio_intr_disable(pin);
+
+			int count = 0;
+			
+			// while(gpio_get_level(pin) != 1 && count > 1){
+			// 	vTaskDelay(20 / portTICK_PERIOD_MS);
+			// 	if(gpio_get_level(pin) == 0)
+			// 		count++;
+			// 	else
+			// 		vTaskDelay(20 / portTICK_PERIOD_MS);
+			// }
+			while(count < 20){
+				if(gpio_get_level(pin) == 1){
+					count++;
+				}
+				if(gpio_get_level(pin) == 0){
+					count = 0;
+					ets_delay_us(1000);
+
+				}
+			}
+
+			
+
+
+			gpio_intr_enable(pin);
 			
 		}
 	}
