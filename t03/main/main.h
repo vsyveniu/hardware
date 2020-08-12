@@ -13,6 +13,7 @@
 #include "esp_err.h"
 #include "driver/timer.h"
 #include <inttypes.h>
+#include <driver/dac.h>
 
 
 

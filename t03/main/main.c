@@ -2,6 +2,7 @@
   
 #define LED_1 	GPIO_NUM_27
 #define LED_2 	GPIO_NUM_26
+#define LED_3 	GPIO_NUM_33
 #define BUTT_1 	GPIO_NUM_39
 #define BUTT_2 	GPIO_NUM_18
 #define GPIO_BUTT1_BIT_MASK (1ULL<<GPIO_NUM_39)
@@ -107,25 +108,31 @@ void butt1_pushed()
 				// timer_set_alarm(TIMER_GROUP_0, TIMER_0, TIMER_ALARM_EN);
 				//if(time_val > 100)
 			// count = 0;
-			// while(gpio_get_level(pin) != 1 && count > 1){
-			// 	vTaskDelay(20 / portTICK_PERIOD_MS);
-			// 	if(gpio_get_level(pin) == 0)
-			// 		count++;
-			// 	else
-			// 		vTaskDelay(20 / portTICK_PERIOD_MS);
-			// }
+			
 
 			// 		butt_1_on = !butt_1_on;
 
 
 			// 	gpio_set_level(LED_1, butt_1_on);
+
+
 			butt_1_on = !butt_1_on;
 			
 			gpio_set_level(LED_1, butt_1_on);
 
 			gpio_intr_disable(pin);
 
-			int count = 0;
+			count = 0;
+
+			while(gpio_get_level(pin) != 1 && count > 0){
+				vTaskDelay(30 / portTICK_PERIOD_MS);
+				if(gpio_get_level(pin) == 0)
+					count++;
+				else
+					vTaskDelay(20 / portTICK_PERIOD_MS);
+			}
+
+
 			
 			// while(gpio_get_level(pin) != 1 && count > 1){
 			// 	vTaskDelay(20 / portTICK_PERIOD_MS);
@@ -145,10 +152,10 @@ void butt1_pushed()
 			// 	}
 			// }
 
-			vTaskDelay(30 / portTICK_PERIOD_MS);
-	
+			
 
 			gpio_intr_enable(pin);
+
 				// timer_set_alarm_value(TIMER_GROUP_0, TIMER_0, time_val);
 				// timer_set_alarm(TIMER_GROUP_0, TIMER_0, TIMER_ALARM_EN);
 			//}
@@ -192,24 +199,16 @@ void butt2_pushed()
 
 			gpio_intr_disable(pin);
 
-			int count = 0;
 			
-			// while(gpio_get_level(pin) != 1 && count > 1){
-			// 	vTaskDelay(20 / portTICK_PERIOD_MS);
-			// 	if(gpio_get_level(pin) == 0)
-			// 		count++;
-			// 	else
-			// 		vTaskDelay(20 / portTICK_PERIOD_MS);
-			// }
-			while(count < 20){
-				if(gpio_get_level(pin) == 1){
-					count++;
-				}
-				if(gpio_get_level(pin) == 0){
-					count = 0;
-					ets_delay_us(1000);
 
-				}
+			count = 0;
+
+			while(gpio_get_level(pin) != 1 && count > 0){
+				vTaskDelay(20 / portTICK_PERIOD_MS);
+				if(gpio_get_level(pin) == 0)
+					count++;
+				else
+					vTaskDelay(20 / portTICK_PERIOD_MS);
 			}
 
 			
@@ -318,7 +317,7 @@ void app_main(void)
 	xTaskCreate(butt2_pushed, "button 2 task", 2048, NULL, 1, NULL);
 
 	while (true){
-
+		
 	}
 }
 
