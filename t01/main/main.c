@@ -1,4 +1,4 @@
-#include "main.h"
+#include "main.h" 
  
 #define PIN_OUT_0 33
 #define PIN_OUT_1 26
@@ -7,7 +7,7 @@
 
 void app_main(void)
 {
-  gpio_set_direction(PIN_OUT_0, GPIO_MODE_OUTPUT);
+  gpio_set_direction(PIN_OUT_0, GPIO_MODE_INPUT_OUTPUT);
   gpio_set_direction(PIN_OUT_1, GPIO_MODE_OUTPUT);
   gpio_set_direction(PIN_OUT_2, GPIO_MODE_OUTPUT);
 
@@ -15,6 +15,7 @@ void app_main(void)
     gpio_set_level(PIN_OUT_0, 1);
     gpio_set_level(PIN_OUT_1, 1);
     gpio_set_level(PIN_OUT_2, 1);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 
 }
