@@ -8,6 +8,7 @@
 #include "esp_log.h"
 #include <esp32/rom/ets_sys.h>
 #include <inttypes.h>
+#include "freertos/queue.h"
 
 
 
