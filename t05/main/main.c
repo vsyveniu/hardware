@@ -7,7 +7,7 @@
 void app_main() {
     char *str = "\e[1;37;41mRED\e[1;49m \e[1;37;42mGREEN\e[1;49m \e[1;37;46mBLUE\e[1;49m DEFAULT\r\n";
     uart_config_t uart_config = {
-        .baud_rate = 9600,
+        .baud_rate = 115200,
         .data_bits = UART_DATA_8_BITS,
         .parity    = UART_PARITY_DISABLE,
         .stop_bits = UART_STOP_BITS_1,
