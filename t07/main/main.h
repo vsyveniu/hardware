@@ -12,6 +12,8 @@
 #include <string.h>
 #include <driver/dac.h>
 #include <inttypes.h>
+#include "driver/i2c.h"
+#include "font6x8.h"
 
 
 
