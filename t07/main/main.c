@@ -42,9 +42,21 @@ void sh1106_update(sh1106_t *display) {
     display->changes = 0x0000;
 }
 
+void get_char(){
+	int w = 6;
+	while(w > 0){
+		printf("%x", font6x8[34]);
+	}
+
+	
+	//int charmap[6] =
+	//	y * w + x
+}
+
 
 void app_main(void){
 
+	get_char();
 
 	esp_err_t err;
 	i2c_cmd_handle_t cmd;
@@ -101,9 +113,9 @@ void app_main(void){
     i2c_cmd_link_delete(cmd);
 
 
-	
 
-	y * w + x
+
+
 
 	//i2c_master_stop(cmd);
 
