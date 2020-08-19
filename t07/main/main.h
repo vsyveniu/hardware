@@ -15,6 +15,12 @@
 #include "driver/i2c.h"
 #include "font6x8.h"
 
+typedef struct {
+    uint8_t addr;           // I2C address
+    i2c_port_t port;        // I2C interface port
+    uint16_t changes;       // page change bit to optimize writes
+    uint8_t pages[16][128]; // page buffer
+} sh1106_t;
 
 
 
