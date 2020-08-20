@@ -42,10 +42,13 @@ void sh1106_update(sh1106_t *display) {
     display->changes = 0x0000;
 }
 
-void get_char(){
-	int w = 6;
-	while(w > 0){
-		printf("%x", font6x8[34]);
+void get_char(uint8_t *arr, int sym){
+	uint8_t w = 0;
+	int start = (sym - 32) * 6 + 0;
+	while(w < 6){
+		arr[w] = font6x8[start];
+		start++;
+		w++;
 	}
 
 	
@@ -54,9 +57,24 @@ void get_char(){
 }
 
 
+
+void write_page(uint8_t *data, uint8_t page) {
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, (OLED_ADDR << 1) | I2C_MASTER_WRITE, true);
+    i2c_master_write_byte(cmd, 0x80, true); // single command
+    i2c_master_write_byte(cmd, 0xB0 + page, true);
+    i2c_master_write_byte(cmd, 0x40, true); // data stream
+    i2c_master_write(cmd, data, 1, true);
+    i2c_master_stop(cmd);
+    i2c_master_cmd_begin(I2C_NUM_0, cmd, 10 / portTICK_PERIOD_MS);
+    i2c_cmd_link_delete(cmd);
+}
+
+
 void app_main(void){
 
-	get_char();
+	//get_char();
 
 	esp_err_t err;
 	i2c_cmd_handle_t cmd;
@@ -153,14 +171,103 @@ void app_main(void){
  sh1106_t display;
     display.addr = OLED_ADDR;
     display.port = I2C_NUM_0;
+	uint8_t buff[8][128];
 
- for (uint8_t y = 0; y < 128; y++) {
+	 for (uint8_t y = 0; y < 8; y++) {
         for (uint8_t x = 0; x < 128; x++) {
-            sh1106_set(&display, x, y, 0xFF);
+			  buff[y][x] = 0;
+
         }
     }
+
+ for (uint8_t y = 0; y < 8; y++) {
+        for (uint8_t x = 0; x < 128; x++) {
+			  buff[y][x] = 0b00000000;
+			  write_page(&buff[y][x], y);
+            //sh1106_set(&display, x, y, 0xFF);
+        }
+    }
+
+	uint8_t arr[8];
+	bzero(arr, 8);
+
+	get_char(arr, 'F');
+
+
+	for (size_t i = 0; i < 8; i++)
+	{
+		printf("%x\n", arr[i]);
+	}
+	
+
+for (size_t i = 0; i < 8; i++)
+{
+	write_page(&arr[i], 2);
+	
+}
+
+	bzero(arr, 8);
+	get_char(arr, 'U');
+
+for (size_t i = 0; i < 8; i++)
+{
+	write_page(&arr[i], 2);
+	
+}
+
+	bzero(arr, 8);
+	get_char(arr, 'C');
+
+for (size_t i = 0; i < 8; i++)
+{
+	write_page(&arr[i], 2);
+	
+}
+
+	bzero(arr, 8);
+	get_char(arr, 'K');
+
+for (size_t i = 0; i < 8; i++)
+{
+	write_page(&arr[i], 2);
+	
+}
+
+
+vTaskDelay(200 / portTICK_PERIOD_MS);
+
+
+ for (int y = 0; y < 8; y++) {
+	 /*  for (int x = 0; x < 128; x++) {
+			  buff[y][x] = 0b1110000;
+			  printf("%uy\n", y);
+			  printf("%u\n", x);
+			  //printf("%x\n", buff[y][x]);
+			  vTaskDelay(5 / portTICK_PERIOD_MS);
+			  write_page(&buff[y][x], 5);
+            //sh1106_set(&display, x, y, 0xFF);
+        }  */
+   /*      for (int x = 50; x < 80; x++) {
+			  buff[y][x] = 0b10000010;
+			  printf("%dy\n", y);
+			  printf("%u\n", x);
+			  //printf("%x\n", buff[y][x]);
+			  vTaskDelay(5 / portTICK_PERIOD_MS);
+			  write_page(&buff[y][x], 5);
+            //sh1106_set(&display, x, y, 0xFF);
+        }
+		for (int x = 80; x < 128; x++) {
+			  buff[y][x] = 0b00000000;
+			  printf("%dy\n", y);
+			  printf("%u\n", x);
+			 // printf("%x\n", buff[y][x]);
+			  vTaskDelay(5 / portTICK_PERIOD_MS);
+				write_page(&buff[y][x], 5);
+            //sh1106_set(&display, x, y, 0xFF);
+        } */
+    }
  
-sh1106_update(&display);
+//sh1106_update(&display);
 
 	
    
