@@ -47,6 +47,7 @@ void get_char(uint8_t *arr, int sym){
 	int start = (sym - 32) * 6 + 0;
 	while(w < 6){
 		arr[w] = font6x8[start];
+		printf("%x\n", arr[w]);
 		start++;
 		w++;
 	}
@@ -54,6 +55,67 @@ void get_char(uint8_t *arr, int sym){
 	
 	//int charmap[6] =
 	//	y * w + x
+}
+/* 
+void create_load(uint8_t *arr, char *str, int len){
+	int i = 0;
+	int j = 0;
+	uint8_t w = 0;
+	int start = 0;
+	 while(i < len){
+		 start = (str[i] - 32) * 6 + 0;
+		 //printf("%d  start\n", start);
+		 //printf("%d  j\n", j);
+		for (w = 0; w < 6; w++){
+			 
+			arr[j] = 0x00;
+			arr[j] = font6x8[start];
+			start++;
+			//printf("%x  arr j \n", arr[j]);
+			j++;
+		}
+		for(w = 6; w < 8; w++){
+			arr[j] = 0b00000000;
+			//printf("%x  arr j \n", arr[j]);
+			j++;
+			
+		}
+		i++;
+
+
+		//get_char(arr, str[i]);
+		//get_char(&arr[i], str[i]);
+		//i++;
+	}
+}
+ */
+void create_load(uint8_t *arr, char *str, int len){
+	int start = 0;
+	int j = 0;
+	int w = 8;
+	int i = 0;
+	for(int k = 0; k < len; k++){
+		start = (str[k] - 32) * 6 + 0;
+		printf("%d start", start);
+		w = 8;
+		while (i < 128){
+			if(w == 0){
+					break;
+				}
+				if(w <= 2){
+					arr[i] = 0x00;
+				}
+				else
+					arr[i] = font6x8[start];
+				start++;
+				w--;
+				printf("%x\n", arr[i]);
+				printf("%d - w\n", w);
+				i++;
+		}		
+		
+	}
+	
 }
 
 
@@ -167,10 +229,9 @@ void app_main(void){
 		i2c_cmd_link_delete(cmd2);
 	}  */
 
+
+	
  
- sh1106_t display;
-    display.addr = OLED_ADDR;
-    display.port = I2C_NUM_0;
 	uint8_t buff[8][128];
 
 	 for (uint8_t y = 0; y < 8; y++) {
@@ -188,19 +249,66 @@ void app_main(void){
         }
     }
 
-	uint8_t arr[8];
-	bzero(arr, 8);
+	uint8_t arr2[8][128];
 
-	get_char(arr, 'F');
+/* int fuck = 0;
+	while(fuck < 16){
+		printf("%x\n", arr2[fuck]);
+		fuck++;
+	} */
+
+	char *test = "Huli meni rogue ";
+	char *test1 = "legacy";
+	char *test2 = "yaksho ne robe";
+	printf("%d  LENt\n", strlen(test));
+
+ for (uint8_t y = 0; y < 8; y++) {
+        for (uint8_t x = 0; x < 128; x++) {
+			  arr2[y][x] = 0b00000000;
+			  write_page(&buff[y][x], y);
+            //sh1106_set(&display, x, y, 0xFF);
+        }
+    }
+
+	 //for (uint8_t y = 0; y < 8; y++) {
+
+		create_load(arr2[0], test, strlen(test));
+
+		create_load(arr2[1], test1, strlen(test1));
+
+		create_load(arr2[2], test2, strlen(test2));
+
+    //}
+
+		
+
+	
+	
+
+	
+	 int fuck = 0;
 
 
+	 for (uint8_t y = 0; y < 8; y++) {
+        for (uint8_t x = 0; x < 128; x++) {
+			// printf("%x\n", arr2[y][x]);
+            //sh1106_set(&display, x, y, 0xFF);
+        }
+    }
+
+
+	//printf("%dfuck\n", fuck);
+
+	//get_char(arr, 'F');
+
+/* 
 	for (size_t i = 0; i < 8; i++)
 	{
 		printf("%x\n", arr[i]);
 	}
-	
+	 */
 
-for (size_t i = 0; i < 8; i++)
+/* for (size_t i = 0; i < 8; i++)
 {
 	write_page(&arr[i], 2);
 	
@@ -222,22 +330,34 @@ for (size_t i = 0; i < 8; i++)
 {
 	write_page(&arr[i], 2);
 	
-}
+} */
 
-	bzero(arr, 8);
-	get_char(arr, 'K');
+//	bzero(arr, 8);
+//	**get_char(arr, 'K');
 
-for (size_t i = 0; i < 8; i++)
-{
-	write_page(&arr[i], 2);
-	
-}
+
+ //for (uint8_t y = 0; y < 8; y++) {
+        for (uint8_t x = 0; x < 128; x++) {
+			  write_page(&arr2[0][x], 1);
+            //sh1106_set(&display, x, y, 0xFF);
+        }
+
+		 for (uint8_t x = 0; x < 128; x++) {
+			  write_page(&arr2[1][x], 3);
+            //sh1106_set(&display, x, y, 0xFF);
+        }
+
+		for (uint8_t x = 0; x < 128; x++) {
+			  write_page(&arr2[2][x], 5);
+            //sh1106_set(&display, x, y, 0xFF);
+        }
+   // }
 
 
 vTaskDelay(200 / portTICK_PERIOD_MS);
 
 
- for (int y = 0; y < 8; y++) {
+ //for (int y = 0; y < 8; y++) {
 	 /*  for (int x = 0; x < 128; x++) {
 			  buff[y][x] = 0b1110000;
 			  printf("%uy\n", y);
@@ -265,7 +385,7 @@ vTaskDelay(200 / portTICK_PERIOD_MS);
 				write_page(&buff[y][x], 5);
             //sh1106_set(&display, x, y, 0xFF);
         } */
-    }
+ //g   }
  
 //sh1106_update(&display);
 
