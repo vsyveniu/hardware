@@ -11,8 +11,13 @@ void app_main(void){
 	gpio_set_direction(EN_ACCEL, GPIO_MODE_OUTPUT);
 	gpio_set_level(EN_ACCEL, 1);
 
-	spi_bus_config_t spi_bus_conf = {
+	spi_device_handle_t spi;
 
+
+	spi_bus_config_t spi_bus_conf = {
+		.miso_io_num = SPI_MISO,
+		.mosi_io_num = SPI_MOSI,
+		.sclk_io_num = SPI_CLK,
 	};
 
 	spi_transaction_t spi_transaction_conf = {
