@@ -15,6 +15,7 @@
 #include "driver/spi_common.h"
 #include "driver/spi_master.h"
 #include "math.h"
+#include <driver/dac.h>
 
 
 

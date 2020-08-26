@@ -7,6 +7,83 @@
 #define SPI_INT1_PIN GPIO_NUM_34
 
 
+xQueueHandle interruptQueue;
+
+static void IRAM_ATTR spi_int_handler(void *args){
+
+	uint32_t pin = (uint32_t) args;
+	xQueueSendFromISR(interruptQueue, &pin, NULL);
+}
+
+
+void beep(){
+
+int volt;
+int beep_count;
+
+		 for (beep_count = 0; beep_count < 1000; beep_count++){ 
+
+              for (volt = 0; volt  < 256; volt+=100)
+                { 
+                    dac_output_voltage(DAC_CHANNEL_1, volt);
+                
+                }     
+                ets_delay_us(1);
+            }
+
+            for (beep_count = 1000; beep_count > 0; beep_count--){ 
+				for (volt = 256; volt  > 0; volt-=8)
+                    {
+                        dac_output_voltage(DAC_CHANNEL_1, volt);
+                    
+                    }      
+                ets_delay_us(1);
+            }
+			
+		 for (beep_count = 0; beep_count < 1000; beep_count++){ 
+
+              for (volt = 0; volt  < 256; volt+=100)
+                { 
+                    dac_output_voltage(DAC_CHANNEL_1, volt);
+                
+                }     
+                ets_delay_us(1);
+            }
+
+            for (beep_count = 1000; beep_count > 0; beep_count--){ 
+				for (volt = 256; volt  > 0; volt-=8)
+                    {
+                        dac_output_voltage(DAC_CHANNEL_1, volt);
+                    
+                    }      
+                ets_delay_us(1);
+            } 
+			
+		 for (beep_count = 0; beep_count < 1000; beep_count++){ 
+
+              for (volt = 0; volt  < 256; volt+=100)
+                { 
+                    dac_output_voltage(DAC_CHANNEL_1, volt);
+                
+                }     
+                ets_delay_us(1);
+            }
+
+            for (beep_count = 1000; beep_count > 0; beep_count--){ 
+				for (volt = 256; volt  > 0; volt-=8)
+                    {
+                        dac_output_voltage(DAC_CHANNEL_1, volt);
+                    
+                    }      
+                ets_delay_us(1);
+            }  
+}
+
+
+
+void read_accel_data(){
+
+}
 
 
 void app_main(void){
@@ -15,7 +92,7 @@ void app_main(void){
 
 	gpio_set_direction(EN_ACCEL, GPIO_MODE_OUTPUT);
 	gpio_set_level(EN_ACCEL, 1);
-	vTaskDelay(5 / portTICK_PERIOD_MS);
+	vTaskDelay(50 / portTICK_PERIOD_MS);
 
 	spi_device_handle_t spi;
 
@@ -58,8 +135,6 @@ void app_main(void){
 		buff[i] = 0x00;
 	}
 
-
-
  	spi_transaction_t spi_transaction_conf = {
 		.flags = 0x80u,
 		//.cmd = 0xff,
@@ -69,7 +144,6 @@ void app_main(void){
 		.tx_buffer = &buff,
 		.rx_buffer = &buff,
 	};
-
 
 	spi_transaction_t spi_start = {
 		.flags = SPI_TRANS_USE_RXDATA,
@@ -90,7 +164,27 @@ void app_main(void){
 		.cmd = 0x2Du,
 		.tx_buffer = wbuff,
 		.length = 8,
-	};  
+	};
+
+	
+
+	uint16_t intbuff[3];
+
+	intbuff[0] = 230;
+
+	spi_transaction_t spi_int1 = {
+		.cmd = 0x24,
+		.length = 8,
+		.tx_buffer = intbuff
+	};
+
+	uint16_t intbuff_r[3];
+
+	spi_transaction_t spi_int1_r = {
+		.cmd = 0x80 | 0x40 | 0x24,
+		.length =  3 * 16,
+		.rx_buffer = intbuff_r,
+	};
 
 	int16_t bufftx[3];
 	spi_transaction_t spi_readData = {
@@ -109,56 +203,59 @@ void app_main(void){
 	ESP_ERROR_CHECK(err);
 
 
+	double x_angle, y_angle, z_angle, R;
 
+	int16_t x, y, z;
 
+	double pos = 0;
 
-	
+	gpio_install_isr_service(0);
+
+	gpio_isr_handler_add(SPI_INT1_PIN, spi_int_handler, (void *)SPI_INT1_PIN);
+
+	interruptQueue = xQueueCreate(10, sizeof(int));
+
+	spi_device_polling_transmit(spi, &spi_start);
+	spi_device_polling_transmit(spi, &spi_start2);
+	spi_device_polling_transmit(spi, &spi_write);
+
+	spi_device_polling_transmit(spi, &spi_int1);
+	spi_device_polling_transmit(spi, &spi_int1_r);
+
+	printf("%d treshhold\n", intbuff_r[0]);
+
 	while (true)
 	{
-		vTaskDelay(200 / portTICK_PERIOD_MS);
+		//printf("%s\n", "----------");
+		//vTaskDelay(200 / portTICK_PERIOD_MS);
 		//spi_device_polling_transmit(spi, &spi_transaction_conf_start);
 
 		//vTaskDelay(2000 / portTICK_PERIOD_MS);
 
-		spi_device_polling_transmit(spi, &spi_start);
-		spi_device_polling_transmit(spi, &spi_start2);
-		spi_device_polling_transmit(spi, &spi_write);
 
-		
 		spi_device_polling_transmit(spi, &spi_readData);
+		spi_device_polling_transmit(spi, &spi_start);
 
 
+		x = buff[0];
+		y = buff[1];
+		z = buff[2];
+
+		/* x_angle = atan2(y, z) * 180/M_PI;
+		y_angle = atan2(x, z) * 180/M_PI;
+		z_angle = atan2(y, x) * 180/M_PI; */
+
+	 	printf("x angle  %d \n", x);
+		printf("y angle  %d \n", y);
+		printf("z angle  %d \n", z);
 
 
-
-		
-
-		//spi_device_polling_transmit(spi, &spi_transaction_conf_status);
+		/* if((x > 230 || y > 230 || z > 230) || (x < -230 || y < -230 || z < -230)){
 
 
-		//spi_device_polling_transmit(spi, &spi_transaction_conf_xl);
-		//spi_device_polling_transmit(spi, &spi_transaction_conf_xh);
-		//spi_device_polling_transmit(spi, &spi_transaction_conf_yl);
-		//spi_device_polling_transmit(spi, &spi_transaction_conf_yh);
+			printf("%s", "fuck");
 
-		printf("%s\n", "----------");
-		//printf("%x status \n", status);
-
-
-			
-		//printf("%X start 1 \n", spi_start.rx_data[0]);
-
-	//	printf("%X start 2 \n", spi_start2.rx_data[0]);
-	/* 	for(int i = 0; i < 3; i++){
-			printf("%d\n", buff[i]);
-		} */
-
-
-		printf("%d x\n ", buff[0]);
-		printf("%d y\n ", buff[1]);
-		printf("%d z\n ", buff[2]);
-
-		printf("%d GYD\n ", a);
+		}  */
 
 
 	}
