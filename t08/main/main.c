@@ -5,6 +5,8 @@
 #define SPI_MOSI GPIO_NUM_13
 #define SPI_CS GPIO_NUM_15
 #define SPI_INT1_PIN GPIO_NUM_34
+#define LED_1 GPIO_NUM_26
+#define LED_2 GPIO_NUM_27
 
 
 xQueueHandle interruptQueue;
@@ -83,7 +85,9 @@ int beep_count;
 
 void accel_interrupt(spi_device_handle_t spi){
 	uint8_t pin;
-	int16_t x, y, z;
+	double x, y, z;
+
+
 
 		int8_t bufftx[3];
 		int16_t buff[3];
@@ -98,23 +102,46 @@ void accel_interrupt(spi_device_handle_t spi){
 		.rx_buffer = buff,
 	};
 
+	uint8_t int_src_buff[1];
+
+	spi_transaction_t int_src = {
+		.cmd = 0x80 | 0x40 | 0x30u,
+		.length = 8,
+		.rx_buffer = int_src_buff, 
+	};
+
 	while (true){
 		if(xQueueReceive(interruptQueue, &pin, portMAX_DELAY))
 		{
 			printf("%s\n", "fuck interrupt");
+			spi_device_polling_transmit(spi, &int_src);
 			spi_device_polling_transmit(spi, &adx_readData);
+			//printf("%d interrupt src \n", int_src_buff[0]);
 			x = buff[0];
 			y = buff[1];
 			z = buff[2];
 
-			printf("x angle  %d \n", x);
-			printf("y angle  %d \n", y);
-			printf("z angle  %d \n", z);   
+			//x = atan((double)x / (sqrt(pow((double)y,z) + pow((double)y,z))));
 
+		 	printf("x angle  %f \n", x);
+			printf("y angle  %f \n", y);
+			printf("z angle  %f \n", z);
+
+
+			if(x > 240 && y < 20){
+				gpio_set_level(LED_1, 1);
+				gpio_set_level(LED_2, 1);
+				vTaskDelay(100 / portTICK_PERIOD_MS);
+				gpio_set_level(LED_1, 0);
+				gpio_set_level(LED_2, 0);
+			}
 		}
 	}
 }
 
+
+       /*  double angle_y = atan((double)accs[1] / (sqrt(pow((double)accs[0],2) + pow((double)accs[2],2))));
+        double angle_z = atan((double)accs[2] / (sqrt(pow((double)accs[0],2) + pow((double)accs[1],2)))); */
 
 
 
@@ -123,6 +150,8 @@ void app_main(void){
 	esp_err_t err;
 
 	gpio_set_direction(EN_ACCEL, GPIO_MODE_OUTPUT);
+	gpio_set_direction(LED_1, GPIO_MODE_OUTPUT);
+	gpio_set_direction(LED_2, GPIO_MODE_OUTPUT);
 	gpio_set_level(EN_ACCEL, 1);
 	vTaskDelay(5 / portTICK_PERIOD_MS);
 
@@ -188,17 +217,25 @@ void app_main(void){
  
 	uint8_t powctlbuff[1];
 
-	powctlbuff[0] = 0b00001011;  // set /link/measure/sleep/wakeup shit
+	powctlbuff[0] = 0b0001000;  // set /link/measure/sleep/wakeup shit
 	spi_transaction_t adx_set_pow_ctl = {
-		.flags = SPI_TRANS_USE_RXDATA,
 		.cmd = 0x2Du,
 		.tx_buffer = powctlbuff,
 		.length = 8,
 	};
 
+	uint8_t powctlbuff_r[1];
+
+	spi_transaction_t adx_read_bw = {
+		.cmd = 0x80 | 0x40 | 0x2Du,
+		.rx_buffer = powctlbuff_r,
+		.length = 8,
+	};
+
+
 	uint8_t treshbuff[1];
 
-	treshbuff[0] = 2;  //set tresh_act register
+	treshbuff[0] = 5;  //set tresh_act register
 	spi_transaction_t adx_treshhold = {
 		.cmd = 0x24u,
 		.length = 8,
@@ -335,8 +372,15 @@ void app_main(void){
 	//10000 16
 	//1111000 act inact
 	// 00010010 activity / watermark
+	//1011   11
 
+	//11000  24
 
+	//111000 56
+
+	//10001011
+
+	//11001100
 
 	
 
@@ -351,35 +395,38 @@ void app_main(void){
 	xTaskCreate(accel_interrupt, "accell 1 task", 2048, spi, 1, NULL);
 
 	spi_device_polling_transmit(spi, &adx_setbw);
-	//spi_device_polling_transmit(spi, &adx_dataformat);
+	spi_device_polling_transmit(spi, &adx_dataformat);
 	spi_device_polling_transmit(spi, &adx_treshhold);
 	spi_device_polling_transmit(spi, &tresh_read);
 	spi_device_polling_transmit(spi, &adx_inact_treshhold);
-	spi_device_polling_transmit(spi, &tresh_inact_read);
-	spi_device_polling_transmit(spi, &adx_int1_en);
 	spi_device_polling_transmit(spi, &en1_readdata);
-	spi_device_polling_transmit(spi, &adx_int_map);
-	spi_device_polling_transmit(spi, &int_map_read);
 	spi_device_polling_transmit(spi, &adx_act_inact);
 	spi_device_polling_transmit(spi, &act_inact_read);
+	spi_device_polling_transmit(spi, &int_map_read);
+	spi_device_polling_transmit(spi, &adx_int_map);
+	spi_device_polling_transmit(spi, &int_src);
+	spi_device_polling_transmit(spi, &tresh_inact_read);
+	spi_device_polling_transmit(spi, &adx_int1_en);
 
 	printf("%d treshhold act\n", intbuff_r[0]);
 	printf("%d treshhold inact\n", tresh_inact_buff[0]);
-/* 	printf("%d interrupt en \n", en_int1buffR[0]);
+ 	printf("%d interrupt en \n", en_int1buffR[0]);
 	printf("%d interrupt map \n", int_map_buff_R[0]);
-	printf("%d act inact \n", act_inact_read_buff[0]); */
+	printf("%d act inact \n", act_inact_read_buff[0]); 
 	spi_device_polling_transmit(spi, &adx_set_pow_ctl);
+	spi_device_polling_transmit(spi, &adx_read_bw);
+	printf("%d pw ctl \n", powctlbuff_r[0]);
 
 	while (true)
 	{
 		//printf("%s\n", "----------");
-		//vTaskDelay(200 / portTICK_PERIOD_MS);
+		vTaskDelay(200 / portTICK_PERIOD_MS);
 		//spi_device_polling_transmit(spi, &adx_readData);
 
-		spi_device_polling_transmit(spi, &int_src);
+		//spi_device_polling_transmit(spi, &int_src);
 		//if(int_src_buff[0] == 18 || int_src_buff[0] == 146)
 			//printf("%d interrupt src \n", int_src_buff[0]);
-			printf("%d\n", gpio_get_level(SPI_INT1_PIN));
+			//printf("%d\n", gpio_get_level(SPI_INT1_PIN));
 
 
 
