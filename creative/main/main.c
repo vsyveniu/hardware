@@ -375,7 +375,7 @@ void accel_init(spi_device_handle_t spi){
 	};
  
 	uint8_t powctlbuff[1];
-	powctlbuff[0] = 0b0001000;  // set link,measure,sleep,wakeup stuff. We need measurement mode
+	powctlbuff[0] = 0b0001100;  // set link,measure,sleep,wakeup stuff. We need measurement mode
 
 	spi_transaction_t adx_set_pow_ctl = {
 		.cmd = 0x2Du,
@@ -428,13 +428,14 @@ void accel_init(spi_device_handle_t spi){
 		.tx_buffer = act_inact_ctl
 	};
 
+	spi_device_polling_transmit(spi, &adx_set_pow_ctl);
 	spi_device_polling_transmit(spi, &adx_setbw);
 	spi_device_polling_transmit(spi, &adx_dataformat);
 	spi_device_polling_transmit(spi, &adx_treshhold);
 	spi_device_polling_transmit(spi, &adx_act_inact);
 	spi_device_polling_transmit(spi, &adx_int_map);
 	spi_device_polling_transmit(spi, &adx_int1_en);
-	spi_device_polling_transmit(spi, &adx_set_pow_ctl);
+
 
 }
 /// ACCELL END
@@ -461,11 +462,10 @@ void butt1_pushed()
 			count = 0;
 
 			while(gpio_get_level(pin) != 1 && count > 0){
-				vTaskDelay(20 / portTICK_PERIOD_MS);
 				if(gpio_get_level(pin) == 0)
 					count++;
 				else
-					vTaskDelay(20 / portTICK_PERIOD_MS);
+					vTaskDelay(100 / portTICK_PERIOD_MS);
 			}
 			gpio_intr_enable(pin);
 			
@@ -491,11 +491,10 @@ void butt2_pushed()
 			count = 0;
 
 			while(gpio_get_level(pin) != 1 && count > 0){
-				vTaskDelay(20 / portTICK_PERIOD_MS);
 				if(gpio_get_level(pin) == 0)
 					count++;
 				else
-					vTaskDelay(20 / portTICK_PERIOD_MS);
+					vTaskDelay(100 / portTICK_PERIOD_MS);
 			}
 
 			gpio_intr_enable(pin);
@@ -505,44 +504,32 @@ void butt2_pushed()
 }
 
 void accel_flipped(void *spi){
+	
 	uint8_t pin;
 	double x, y, z;
-	uint8_t count = 0;
 
-
-	static uint8_t z_fired;
-	static uint8_t x_fired;
-	static uint8_t y_fired;
-	z_fired = 0;
-	x_fired = 0;
-	y_fired = 0;
-	static uint8_t z_lock;
-	static uint8_t x_lock;
-	static uint8_t y_lock;
-	z_lock = 0;
-	x_lock = 0;
-	y_lock = 0;
-
-	uint8_t tmp = 0;
+	static uint8_t z_fired = 0;
+	static uint8_t x_fired = 0;
+	static uint8_t y_fired = 0;
     _Bool is_x_low; 
     _Bool is_y_low;
     _Bool is_z_low;
-   
 
-	int8_t bufftx[3];
+   
 	int16_t buff[3];
-	for(int i = 0; i < 8; i++){
-		buff[i] = 0x00;
+
+	for(int i = 0; i < 3; i++){
+			buff[i] = 0x00;
 	}
 
 	spi_transaction_t adx_readData = {
 		.cmd = 0x80 | 0x40 | 0x32,
 		.length = 3 * 16,
-		.tx_buffer = bufftx,
 		.rx_buffer = buff,
 	};
 
 	uint8_t int_src_buff[1];
+	memset(int_src_buff, 0, sizeof(int_src_buff));
 
 	spi_transaction_t int_src = {
 		.cmd = 0x80 | 0x40 | 0x30u,
@@ -554,91 +541,49 @@ void accel_flipped(void *spi){
 		
 		if(xQueueReceive(accelQueue, &pin, portMAX_DELAY))
 		{
-			
-			printf("%s z \n", "fuck interrupt");
 
-			spi_device_polling_transmit(spi, &adx_readData);
-			spi_device_polling_transmit(spi, &int_src);
+			printf("%s", "feck");
+			beep();
+			 spi_device_polling_transmit(spi, &adx_readData); 
+			spi_device_polling_transmit(spi, &int_src);  // after reading data should read interrupt source register to clear it for next interrupts can be fired
 
-			x = (double)buff[0]/256.0;
+			/*x = (double)buff[0]/256.0;
 			y = (double)buff[1]/256.0;
 			z = (double)buff[2]/256.0;
 
 			is_x_low = (fabs(x) < 0.15);
     	    is_y_low = (fabs(y) < 0.15);
     	    is_z_low = (fabs(z) < 0.15);
-			
-
-			printf("%d\n", is_x_low);
-			printf("%d\n", is_y_low);
-			printf("%d\n", is_z_low);
 
 			if (is_z_low && is_y_low && !z_fired && !is_x_low)
     		{
-				printf("%s\n", "sdf");
-
 				z_fired = 1;
-				y_fired = 0;
-				x_lock = 1;
-				y_lock = 1;
-				printf("%d z\n", z_fired);
 				beep();
-
-				count = 0;
 			}
 			else if(!is_z_low && is_y_low && !is_x_low )
 			{
-
 				z_fired = 0;
-				y_fired = 0;
-				printf("%d z\n", z_fired);
-
-				count = 0;
-				z_lock = 0;
-
 			}
 	
 			else if (is_z_low && is_x_low && !x_fired && !is_y_low)
     		{
-				printf("%s\n", "ggggdf");
-
 				x_fired = 1;
-				printf("%d z\n", z_fired);
 				beep();
-				count = 0;
 			}
 			else if(!is_z_low && is_x_low && !is_y_low)
 			{
-	
 				x_fired = 0;
-
-				printf("%d z\n", z_fired);
-
-				count = 0;
-				z_lock = 0;
 			}
 
 			else if ((is_z_low && !is_x_low && !y_fired))
     		{
-				printf("%s\n", "sddddf");
-				
-		
 				y_fired = 1;
-				printf("%d z\n", z_fired);
 				beep();
-
-				count = 0;
 			}
 			else if((!is_z_low && !is_x_low && !is_y_low))
 			{
-	
 				y_fired = 0;
-				printf("%d z\n", z_fired);
-
-				count = 0;
-				z_lock = 0;
-			}
-
+			} */
 		}
 	}
 }
@@ -651,12 +596,10 @@ int ignite_parts(){
 
 	gpio_set_direction(DHT_POWER, GPIO_MODE_OUTPUT);	
 	gpio_set_level(DHT_POWER, 1);
+	
 
 	gpio_set_direction(EN_OLED, GPIO_MODE_OUTPUT);
 	gpio_set_level(EN_OLED, 1);
-
-	gpio_set_direction(EN_ACCEL, GPIO_MODE_OUTPUT);
-	gpio_set_level(EN_ACCEL, 1);
 
 	gpio_set_direction(EN_AMP, GPIO_MODE_OUTPUT);
     gpio_set_level(EN_AMP, 1);
@@ -676,6 +619,21 @@ int ignite_parts(){
 	
 	/// Accelerometer initialization
 
+	gpio_set_direction(EN_ACCEL, GPIO_MODE_OUTPUT);
+	gpio_set_level(EN_ACCEL, 1);
+
+	gpio_config_t accel_int_conf = {
+		.pin_bit_mask = GPIO_SEL_34,
+		.mode = GPIO_MODE_INPUT,
+		.intr_type = GPIO_INTR_POSEDGE,
+	};
+
+	err = gpio_config(&accel_int_conf);
+	if(err != ESP_OK){
+		display_str("Gpio 34 broken!", 3, 10, 6);
+		return (ESP_FAIL);
+	}
+
 	spi_bus_config_t spi_bus_conf = {
 		.miso_io_num = SPI_MISO,
 		.mosi_io_num = SPI_MOSI,
@@ -689,8 +647,10 @@ int ignite_parts(){
 		.mode = 3,
 		.clock_speed_hz = 1000000,
 		.spics_io_num = SPI_CS,
-		.queue_size = 1,
+		.queue_size = 5,
 	};
+
+
 
 	err = spi_bus_initialize(SPI3_HOST, &spi_bus_conf, 0);
 	if(err != ESP_OK){
@@ -709,17 +669,7 @@ int ignite_parts(){
 
 	/// END Accelerometer initialization
 
-	gpio_config_t accel_int_conf = {
-		.pin_bit_mask = GPIO_SEL_34,
-		.mode = GPIO_MODE_INPUT,
-		.intr_type = GPIO_INTR_POSEDGE,
-	};
 
-	err = gpio_config(&accel_int_conf);
-	if(err != ESP_OK){
-		display_str("Gpio 34 broken!", 3, 10, 6);
-		return (ESP_FAIL);
-	}
 
 	gpio_config_t butt_1_conf = {
 		.pin_bit_mask = GPIO_SEL_39,
@@ -788,7 +738,6 @@ void measure(){
 			oled_page = prev_page;
 		}
 		else{
-
 			oled_page = DHT_RETARD;
 			clear_oled();
 		}
@@ -800,17 +749,13 @@ void measure(){
 void app_main(void){
 	
 	uint8_t dht_data[5];
-
-	vTaskDelay(5 / portTICK_PERIOD_MS);
-
+	vTaskDelay(2000 / portTICK_PERIOD_MS); // delay for DHT11 ready	
 
 	if(ignite_parts() != ESP_OK){
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
 		display_str("Have to reboot!", 3, 0, 6);
 		printf("Something broken!");
 	}
-
-	vTaskDelay(2000 / portTICK_PERIOD_MS); // delay for DHT11 ready	
 
 	get_DHT_data(dht_data);
 	temperature = dht_data[2];
@@ -837,20 +782,20 @@ void app_main(void){
 	while(true){
 		
 		if(oled_page == 0){
-			vTaskDelay(10 / portTICK_PERIOD_MS);
+			vTaskDelay(100 / portTICK_PERIOD_MS);
 		 	sprintf(temperature_buff, "Temperature %dC", temperature);
 			display_str(temperature_buff, 3, 1, 7);
 			prev_page = OLED_PAGE_TEMPERATURE;
 		}
 		else if(oled_page == 1)
 		{
-			vTaskDelay(10 / portTICK_PERIOD_MS);
+			vTaskDelay(100 / portTICK_PERIOD_MS);
 			sprintf(humidity_buff, "Humidity %d%%", humidity);
 			display_str(humidity_buff, 3, 1, 7);	
 			prev_page = OLED_PAGE_HUMIDITY;
 		}
 		else if(oled_page == DHT_RETARD){
-			vTaskDelay(10 / portTICK_PERIOD_MS);
+			vTaskDelay(100 / portTICK_PERIOD_MS);
 			display_str("Wait for dht...", 3, 1, 7);
 		}
 	}
