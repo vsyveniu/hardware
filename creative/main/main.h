@@ -21,4 +21,8 @@
 #include <stdlib.h>
 
 
+typedef struct {
+    uint8_t page_orientation;
+} oled_settings_t;
+
 #endif

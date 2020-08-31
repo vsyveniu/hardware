@@ -6,7 +6,6 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "driver/gpio.h"
-#include "esp_log.h"
 #include <esp32/rom/ets_sys.h>
 #include "esp_err.h"
 #include <string.h>
