@@ -22,6 +22,9 @@
 #define OLED_PAGE_HUMIDITY 1
 #define DHT_RETARD 2
 
+#define OLED_NORMAL 0
+#define OLED_REVERSE 1
+
 #define BUTT_1 	GPIO_NUM_39
 #define BUTT_2 	GPIO_NUM_18
 
@@ -32,6 +35,8 @@ static char humidity_buff[15];
 static int humidity = 0;
 static char oled_page = OLED_PAGE_TEMPERATURE;
 static char prev_page = OLED_PAGE_TEMPERATURE;
+static int oled_orientation = OLED_NORMAL;
+static int oled_orientation_prev = OLED_NORMAL;
 
 xQueueHandle button1Queue;
 xQueueHandle button2Queue;
@@ -226,7 +231,7 @@ int init_oled(oled_settings_t *oled_conf){
     i2c_master_write_byte(cmd, 0x14, true);
     i2c_master_write_byte(cmd, 0x10, true); // high column
     i2c_master_write_byte(cmd, 0xB0, true);
-    i2c_master_write_byte(cmd, oled_conf->page_orientation, true);  //reverse page order (from up to down)
+    i2c_master_write_byte(cmd, 0xC8, true);  //reverse page order (from up to down)
     i2c_master_write_byte(cmd, 0x00, true); // low column
     i2c_master_write_byte(cmd, 0x10, true);
     i2c_master_write_byte(cmd, 0x40, true);
@@ -246,6 +251,7 @@ int init_oled(oled_settings_t *oled_conf){
 	return (ESP_OK);
 
 }
+
 
 
 void write_page(uint8_t *data, uint8_t page) {
@@ -357,6 +363,36 @@ void clear_oled(){
 }
 
 
+void oled_reverse(int orientation){
+
+	esp_err_t err;
+	i2c_cmd_handle_t cmd;
+	int oled_orientation = 0xC8;
+	int page_order = 0xA1;
+
+	(orientation == OLED_REVERSE) ? oled_orientation = 0xC0 : 0;
+	(orientation == OLED_REVERSE) ? page_order = 0xA0 : 0;
+	
+
+printf("%s", "FUCK\n");
+	clear_oled();
+
+	cmd = i2c_cmd_link_create();
+
+
+   	i2c_master_start(cmd);
+   
+    i2c_master_write_byte(cmd, (OLED_ADDR << 1) | I2C_MASTER_WRITE, true);
+	i2c_master_write_byte(cmd, 0x00, true); 
+	i2c_master_write_byte(cmd, page_order, true);  
+    i2c_master_write_byte(cmd, oled_orientation, true);  
+    i2c_master_stop(cmd);
+    i2c_master_cmd_begin(I2C_NUM_0, cmd, 10 / portTICK_PERIOD_MS);
+    i2c_cmd_link_delete(cmd);
+
+
+	display_str("........", 3, 10, 7);
+}
 
 //// END OLED
 
@@ -384,7 +420,7 @@ void accel_init(spi_device_handle_t spi){
 	};
 
 	uint8_t tresh_buff[1];
-	tresh_buff[0] = 5;  //set tresh_act register. When activity is detected, the magnitude compared with this value. If magnitude exceeds a value, interrupt is fired
+	tresh_buff[0] = 2;  //set tresh_act register. When activity is detected, the magnitude compared with this value. If magnitude exceeds a value, interrupt is fired
 
 	spi_transaction_t adx_treshhold = {
 		.cmd = 0x24u,
@@ -420,12 +456,20 @@ void accel_init(spi_device_handle_t spi){
 	};
 
 	uint8_t act_inact_ctl[1];
-	act_inact_ctl[0] = 0b11110000;    // activate or deactivate axis interrupts
+	act_inact_ctl[0] = 0b11000000;    // activate or deactivate axis interrupts
 
 	spi_transaction_t  adx_act_inact = {  
 		.cmd = 0x27u,
 		.length = 8,
 		.tx_buffer = act_inact_ctl
+	};
+
+	uint8_t int_src_buff[1];
+
+	spi_transaction_t clear_int_src = {  //read interrupts source register to clear it
+		.cmd = 0x80 | 0x40 | 0x30u,
+		.length = 8,
+		.rx_buffer = int_src_buff
 	};
 
 	spi_device_polling_transmit(spi, &adx_set_pow_ctl);
@@ -435,6 +479,7 @@ void accel_init(spi_device_handle_t spi){
 	spi_device_polling_transmit(spi, &adx_act_inact);
 	spi_device_polling_transmit(spi, &adx_int_map);
 	spi_device_polling_transmit(spi, &adx_int1_en);
+	spi_device_polling_transmit(spi, &clear_int_src);
 
 
 }
@@ -511,6 +556,7 @@ void accel_flipped(void *spi){
 	static uint8_t z_fired = 0;
 	static uint8_t x_fired = 0;
 	static uint8_t y_fired = 0;
+	static uint8_t is_up = 1;
     _Bool is_x_low; 
     _Bool is_y_low;
     _Bool is_z_low;
@@ -536,54 +582,69 @@ void accel_flipped(void *spi){
 		.length = 8,
 		.rx_buffer = int_src_buff, 
 	};
+	oled_settings_t oled_conf = {
+		.page_orientation = 0xC8,
+	};
+
+
+	i2c_cmd_handle_t cmd;
+	cmd = i2c_cmd_link_create();
+	
 
 	while (true){
 		
 		if(xQueueReceive(accelQueue, &pin, portMAX_DELAY))
 		{
 
-			printf("%s", "feck");
-			beep();
-			 spi_device_polling_transmit(spi, &adx_readData); 
+
+		
+			spi_device_polling_transmit(spi, &adx_readData); 
 			spi_device_polling_transmit(spi, &int_src);  // after reading data should read interrupt source register to clear it for next interrupts can be fired
 
-			/*x = (double)buff[0]/256.0;
+
+		
+			x = (double)buff[0]/256.0;
 			y = (double)buff[1]/256.0;
 			z = (double)buff[2]/256.0;
 
-			is_x_low = (fabs(x) < 0.15);
-    	    is_y_low = (fabs(y) < 0.15);
-    	    is_z_low = (fabs(z) < 0.15);
+	/* 		is_x_low = (fabs(x) < 0.10);
+    	    is_y_low = (fabs(y) < 0.10);
+    	    is_z_low = (fabs(z) < 0.10); */
 
-			if (is_z_low && is_y_low && !z_fired && !is_x_low)
+	/* 		printf("%s", "---------\n");
+		 	 printf("%d x \n", is_x_low );
+			printf("%d y \n", is_y_low );
+			printf("%d z \n", is_z_low ); 
+ */
+		 	printf("%s", "---------\n");
+		 	 printf("%f x \n", x);
+			printf("%f y \n", y);
+			printf("%f z \n", z); 
+
+ 
+ 
+			if (y > 0)
     		{
+				oled_orientation = OLED_REVERSE;
+					//printf("%d oled orientint intr\n", oled_orientation);
+				//printf("%d oled orientintprev intr\n", oled_orientation_prev);
 				z_fired = 1;
-				beep();
+				//beep();
+				is_up = 0;
+
 			}
-			else if(!is_z_low && is_y_low && !is_x_low )
-			{
-				z_fired = 0;
-			}
-	
-			else if (is_z_low && is_x_low && !x_fired && !is_y_low)
+			else if (y < 0)
     		{
 				x_fired = 1;
-				beep();
-			}
-			else if(!is_z_low && is_x_low && !is_y_low)
-			{
-				x_fired = 0;
+				oled_orientation = OLED_NORMAL;
+				//printf("%d oled orientint intr\n", oled_orientation);
+				//printf("%d oled orientintprev intr\n", oled_orientation_prev);
+				//beep();
+				is_up = 1;
 			}
 
-			else if ((is_z_low && !is_x_low && !y_fired))
-    		{
-				y_fired = 1;
-				beep();
-			}
-			else if((!is_z_low && !is_x_low && !is_y_low))
-			{
-				y_fired = 0;
-			} */
+		
+
 		}
 	}
 }
@@ -591,80 +652,53 @@ void accel_flipped(void *spi){
 /// END INTERRUTPS
 int ignite_parts(){
 
+
 	esp_err_t err;
 	spi_device_handle_t spi;
 
-	gpio_set_direction(DHT_POWER, GPIO_MODE_OUTPUT);	
-	gpio_set_level(DHT_POWER, 1);
-	
+		oled_settings_t oled_conf = {
+		.page_orientation = 0xC8,
+
+
+	};
 
 	gpio_set_direction(EN_OLED, GPIO_MODE_OUTPUT);
 	gpio_set_level(EN_OLED, 1);
+	
+
+	gpio_set_direction(DHT_POWER, GPIO_MODE_OUTPUT);	
+	gpio_set_level(DHT_POWER, 1);
 
 	gpio_set_direction(EN_AMP, GPIO_MODE_OUTPUT);
     gpio_set_level(EN_AMP, 1);
 	dac_output_enable(DAC_CHANNEL_1);
 
-	oled_settings_t oled_conf = {
-		.page_orientation = 0xC8,
-	};
+	gpio_set_direction(EN_ACCEL, GPIO_MODE_OUTPUT);
+	gpio_set_level(EN_ACCEL, 1);
+	vTaskDelay(1000/portTICK_PERIOD_MS);
+	
 
 
-	vTaskDelay(50 / portTICK_PERIOD_MS);
+
+
 	if(init_oled(&oled_conf) != ESP_OK){  //init oled
 		return (ESP_FAIL);
 	}
+	vTaskDelay(100/portTICK_PERIOD_MS);
 	clear_oled();
 	display_str("Ignition...", 3, 10, 7);
+
+	
+	
+	
+
+
+
 	
 	/// Accelerometer initialization
 
-	gpio_set_direction(EN_ACCEL, GPIO_MODE_OUTPUT);
-	gpio_set_level(EN_ACCEL, 1);
+	
 
-	gpio_config_t accel_int_conf = {
-		.pin_bit_mask = GPIO_SEL_34,
-		.mode = GPIO_MODE_INPUT,
-		.intr_type = GPIO_INTR_POSEDGE,
-	};
-
-	err = gpio_config(&accel_int_conf);
-	if(err != ESP_OK){
-		display_str("Gpio 34 broken!", 3, 10, 6);
-		return (ESP_FAIL);
-	}
-
-	spi_bus_config_t spi_bus_conf = {
-		.miso_io_num = SPI_MISO,
-		.mosi_io_num = SPI_MOSI,
-		.sclk_io_num = SPI_CLK,
-		.quadwp_io_num = -1,
-		.quadhd_io_num = -1,
-	};
-
-	spi_device_interface_config_t spi_device_conf = {
- 		.command_bits = 8,
-		.mode = 3,
-		.clock_speed_hz = 1000000,
-		.spics_io_num = SPI_CS,
-		.queue_size = 5,
-	};
-
-
-
-	err = spi_bus_initialize(SPI3_HOST, &spi_bus_conf, 0);
-	if(err != ESP_OK){
-		display_str("Accelerometer broken!", 3, 10, 6);
-		return (ESP_FAIL);
-	}
-
-	err = spi_bus_add_device(SPI3_HOST, &spi_device_conf, &spi);
-	if(err != ESP_OK){
-		display_str("Accelerometer broken!", 3, 10, 6);
-		return (ESP_FAIL);
-	}
-
-	accel_init(spi);
 
 
 	/// END Accelerometer initialization
@@ -718,6 +752,53 @@ int ignite_parts(){
 	button2Queue = xQueueCreate(10, sizeof(int));
 	accelQueue = xQueueCreate(10, sizeof(int));
 
+		gpio_config_t accel_int_conf = {
+		.pin_bit_mask = GPIO_SEL_34,
+		.mode = GPIO_MODE_INPUT,
+		.intr_type = GPIO_INTR_POSEDGE,
+	};
+
+	err = gpio_config(&accel_int_conf);
+	if(err != ESP_OK){
+		display_str("Gpio 34 broken!", 3, 10, 6);
+		return (ESP_FAIL);
+	}
+
+	spi_bus_config_t spi_bus_conf = {
+		.miso_io_num = SPI_MISO,
+		.mosi_io_num = SPI_MOSI,
+		.sclk_io_num = SPI_CLK,
+		.quadwp_io_num = -1,
+		.quadhd_io_num = -1,
+	};
+
+	spi_device_interface_config_t spi_device_conf = {
+ 		.command_bits = 8,
+		.mode = 3,
+		.clock_speed_hz = 1000000,
+		.spics_io_num = SPI_CS,
+		.queue_size = 5,
+	};
+
+
+
+	err = spi_bus_initialize(SPI3_HOST, &spi_bus_conf, 0);
+	if(err != ESP_OK){
+		display_str("Accelerometer broken!", 3, 10, 6);
+		return (ESP_FAIL);
+	}
+
+	err = spi_bus_add_device(SPI3_HOST, &spi_device_conf, &spi);
+	if(err != ESP_OK){
+		display_str("Accelerometer broken!", 3, 10, 6);
+		return (ESP_FAIL);
+	}
+
+	accel_init(spi);
+
+
+
+
 
 	xTaskCreatePinnedToCore(butt1_pushed, "button 1 task", 2048, NULL, 1, NULL, 1);
 	xTaskCreatePinnedToCore(butt2_pushed, "button 2 task", 2048, NULL, 1, NULL, 1);
@@ -729,6 +810,7 @@ int ignite_parts(){
 
 void measure(){
 	uint8_t dht_data[5];
+	vTaskDelay(2000 / portTICK_PERIOD_MS); // delay for DHT11 ready
 
 	while(true){
 		vTaskDelay(2000 / portTICK_PERIOD_MS);
@@ -749,11 +831,9 @@ void measure(){
 void app_main(void){
 	
 	uint8_t dht_data[5];
-	vTaskDelay(2000 / portTICK_PERIOD_MS); // delay for DHT11 ready	
-
 	if(ignite_parts() != ESP_OK){
-		vTaskDelay(1000 / portTICK_PERIOD_MS);
 		display_str("Have to reboot!", 3, 0, 6);
+		vTaskDelay(2000 / portTICK_PERIOD_MS);
 		printf("Something broken!");
 	}
 
@@ -778,26 +858,31 @@ void app_main(void){
 
 	xTaskCreate(measure, "measure task", 2048, NULL, 1, NULL);
 	
-	
+
 	while(true){
-		
-		if(oled_page == 0){
-			vTaskDelay(100 / portTICK_PERIOD_MS);
-		 	sprintf(temperature_buff, "Temperature %dC", temperature);
-			display_str(temperature_buff, 3, 1, 7);
-			prev_page = OLED_PAGE_TEMPERATURE;
+		 if(oled_orientation != oled_orientation_prev){
+			oled_reverse(oled_orientation);
+			oled_orientation_prev = oled_orientation;
 		}
-		else if(oled_page == 1)
-		{
-			vTaskDelay(100 / portTICK_PERIOD_MS);
-			sprintf(humidity_buff, "Humidity %d%%", humidity);
-			display_str(humidity_buff, 3, 1, 7);	
-			prev_page = OLED_PAGE_HUMIDITY;
+		else
+		{ 
+			if(oled_page == 0){
+				sprintf(temperature_buff, "Temperature %dC", temperature);
+				display_str(temperature_buff, 3, 1, 7);
+				prev_page = OLED_PAGE_TEMPERATURE;
+			}
+			else if(oled_page == 1)
+			{
+				sprintf(humidity_buff, "Humidity %d%%", humidity);
+				display_str(humidity_buff, 3, 1, 7);	
+				prev_page = OLED_PAGE_HUMIDITY;
+			}
+			else if(oled_page == DHT_RETARD){
+				display_str("Wait for dht...", 3, 1, 7);
+			}
 		}
-		else if(oled_page == DHT_RETARD){
-			vTaskDelay(100 / portTICK_PERIOD_MS);
-			display_str("Wait for dht...", 3, 1, 7);
-		}
+
+		vTaskDelay(300 / portTICK_PERIOD_MS);
 	}
 }
 
