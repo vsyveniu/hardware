@@ -6,7 +6,6 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "driver/gpio.h"
-#include "esp_log.h"
 #include <esp32/rom/ets_sys.h>
 #include "esp_err.h"
 #include <string.h>
@@ -14,7 +13,7 @@
 #include <inttypes.h>
 #include "driver/i2c.h"
 #include "defines.h"
-#include "font6x8.h"
+
 
 
 void display_str(char *str, int page, int appear_speed, int font_weight);

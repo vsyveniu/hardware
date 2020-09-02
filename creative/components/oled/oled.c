@@ -1,4 +1,5 @@
 #include "oled.h"
+#include "font6x8.h"
 
 
 int init_oled(){

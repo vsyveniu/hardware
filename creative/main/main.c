@@ -1,7 +1,6 @@
 #include "main.h"
 #include "defines.h"
 
-
 static char temperature_buff[16];
 static int temperature = 0;
 static char humidity_buff[15];
@@ -33,16 +32,13 @@ static void IRAM_ATTR spi_int_handler(void *args){
 	xQueueSendFromISR(accelQueue, &pin, NULL);
 }
 
-
 void butt1_pushed()
 {
 	uint32_t pin;
 	int count;
 
 	while (true){
-		if(xQueueReceive(button1Queue, &pin, portMAX_DELAY))
-		{
-
+		if(xQueueReceive(button1Queue, &pin, portMAX_DELAY)){
 			gpio_intr_disable(pin);
 
 			oled_page = OLED_PAGE_TEMPERATURE;
@@ -62,11 +58,9 @@ void butt1_pushed()
 					vTaskDelay(15/portTICK_PERIOD_MS);
 					if(gpio_get_level(pin) == 1)
 						count = 1;
-				}
-					
+				}				
 			}
-			gpio_intr_enable(pin);
-			
+			gpio_intr_enable(pin);	
 		}
 	}
 }
@@ -76,8 +70,7 @@ void butt2_pushed()
 	uint32_t pin;
 	int count;
 
-	while (true)
-	{
+	while (true){
 		
 		if(xQueueReceive(button2Queue, &pin, portMAX_DELAY))
 		{
@@ -99,15 +92,12 @@ void butt2_pushed()
 					vTaskDelay(15/portTICK_PERIOD_MS);
 					if(gpio_get_level(pin) == 1)
 						count = 1;
-				}
-					
+				}			
 			}
-			gpio_intr_enable(pin);
-			
+			gpio_intr_enable(pin);	
 		}
 	}
 }
-
 
 void accel_flipped(void *spi){
 	
@@ -197,12 +187,10 @@ void measure(){
 }
 
 
-
 int ignite_parts(){
 
 	esp_err_t err;
 	spi_device_handle_t spi;
-
 
 	gpio_set_direction(EN_OLED, GPIO_MODE_OUTPUT);
 	gpio_set_level(EN_OLED, 1);
@@ -218,7 +206,6 @@ int ignite_parts(){
 	gpio_set_level(EN_ACCEL, 1);
 	vTaskDelay(1000/portTICK_PERIOD_MS);
 	
-
 	if(init_oled() != ESP_OK){  
 		return (ESP_FAIL);
 	}
@@ -246,7 +233,6 @@ int ignite_parts(){
 		return (ESP_FAIL);
 	}
 
-
 	err = gpio_config(&butt_2_conf);
 	if(err != ESP_OK){
 		display_str("Gpio 18 broken!", 3, 10, 6);
@@ -266,7 +252,6 @@ int ignite_parts(){
 	gpio_intr_disable(BUTT_1);
 	gpio_intr_disable(BUTT_2);
 	gpio_intr_disable(SPI_INT1_PIN);
-
 
 	button1Queue  = xQueueCreate(10, sizeof(int));
 	button2Queue = xQueueCreate(10, sizeof(int));
@@ -300,7 +285,6 @@ int ignite_parts(){
 		.queue_size = 5,
 	};
 
-
 	err = spi_bus_initialize(SPI3_HOST, &spi_bus_conf, 0);
 	if(err != ESP_OK){
 		display_str("Accelerometer broken!", 3, 10, 6);
@@ -320,10 +304,8 @@ int ignite_parts(){
 	xTaskCreatePinnedToCore(accel_flipped, "accelerometer task", 2048, spi, 1, NULL, 1);
 	xTaskCreate(measure, "measure task", 2048, NULL, 1, NULL);
 
-
 	return(ESP_OK);
 }
-
 
 void app_main(void){
 	
@@ -333,8 +315,6 @@ void app_main(void){
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
 		esp_restart();
 	}
-
-	
 
 	get_DHT_data(dht_data);
 	temperature = dht_data[2];
