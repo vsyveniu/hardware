@@ -7,36 +7,13 @@
 #define LEDC_DUTY_RESOLUTION	LEDC_TIMER_10_BIT
 #define LEDC_FREQENCY			(1000)
 
-
 void pulse_led1(ledc_channel_config_t ledc_channel){
-
-	// uint32_t duty;
-
- // 	for(duty = 0; duty < LEDC_DUTY; duty++)
- // 	{
-				 	
-	// 	ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, duty);
-	//  	ets_delay_us(220);
-	// 	ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
-	// }
-
-	// for(duty = LEDC_DUTY; duty > 0; duty--)
-	// {  
-	// 	ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, duty);
-	// 	ets_delay_us(220);
-	// 	ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
-	// }
-	// ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, 0);
-	// ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
-
-
 
 	ledc_set_fade_with_time(ledc_channel.speed_mode, ledc_channel.channel, LEDC_DUTY, 2000);
 	ledc_fade_start(ledc_channel.speed_mode, ledc_channel.channel, LEDC_FADE_WAIT_DONE);
 	ledc_set_fade_with_time(ledc_channel.speed_mode, ledc_channel.channel, 0, 2000);
 	ledc_fade_start(ledc_channel.speed_mode, ledc_channel.channel, LEDC_FADE_WAIT_DONE);
 }
-
 
 void pulse_led2(){
 
@@ -54,8 +31,7 @@ void pulse_led2(){
 	{
 		dac_output_voltage(DAC_CHANNEL_2, volt);
 		ets_delay_us(8000);
-	}
-			 
+	}		 
 }
 
 void app_main(void)
@@ -86,5 +62,3 @@ void app_main(void)
 		pulse_led2();
 	}
 }
-
-

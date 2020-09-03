@@ -1,13 +1,8 @@
 #include "main.h"
 #define DHT_PIN GPIO_NUM_4
 #define DHT_POWER GPIO_NUM_2
-#define HUM_BYTE_INDEX 0
-#define TEMP_BYTE_INDEX 2
-
-
 
 int get_all_data(){
-
 
   u_int8_t dataBytes[5];
   int count = 0;
@@ -15,11 +10,8 @@ int get_all_data(){
   int bitNum = 7;
   int bitCount = 0;
 
- 
-
   for (int i = 0; i <5; i++)
   		dataBytes[i] = 0; 
-
 
   	gpio_set_direction(DHT_PIN, GPIO_MODE_INPUT_OUTPUT);
 	gpio_set_level(DHT_PIN, 0); 
@@ -111,16 +103,12 @@ int get_all_data(){
   
 	}
 
-
-
-
 int checksum = dataBytes[0] + dataBytes[2] + dataBytes[3];
 
 if(checksum != dataBytes[4]){
 	printf("%s", "checksum is corrupted");
-	return -1;
+	return ESP_FAIL;
 }
-
 	printf("Temperature: %d C\n", dataBytes[2]);
 	printf("Humidity: %d %%\n", dataBytes[0]);
 
@@ -131,10 +119,9 @@ void app_main(void)
 {
 	gpio_set_direction(DHT_POWER, GPIO_MODE_OUTPUT);	
 	gpio_set_level(DHT_POWER, 1);
-	vTaskDelay(2000 / portTICK_PERIOD_MS);
+	vTaskDelay(2000 / portTICK_PERIOD_MS); //delay for dht ready
 		
 	 while (true){
-
 		get_all_data();
 	 	vTaskDelay(3000 / portTICK_PERIOD_MS);
 	 }

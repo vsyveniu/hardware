@@ -1,4 +1,5 @@
 #include "main.h"
+
 #define EN_ACCEL GPIO_NUM_23
 #define SPI_CLK GPIO_NUM_14
 #define SPI_MISO GPIO_NUM_12
@@ -18,7 +19,6 @@ static void IRAM_ATTR spi_int_handler(void *args){
 	xQueueSendFromISR(interruptQueue, &pin, NULL);
 }
 
-
 void leds_on(bool is_on){
 
 	if(is_on){
@@ -35,13 +35,13 @@ void leds_on(bool is_on){
 
 void beep(){
 
-int volt;
-int beep_count;
+	int volt;
+	int beep_count;
 
 		 for (beep_count = 0; beep_count < 1000; beep_count++){ 
 
               for (volt = 0; volt  < 256; volt+=20)
-{ 
+			{ 
                     dac_output_voltage(DAC_CHANNEL_1, volt);
                 
                 }     
@@ -65,7 +65,7 @@ int beep_count;
                 
                 }     
                 ets_delay_us(1);
-            }
+         }
 
         for (beep_count = 1000; beep_count > 0; beep_count--){ 
 
@@ -75,7 +75,7 @@ int beep_count;
                     
                 }      
                 ets_delay_us(1);
-            } 
+        } 
 			
 		 for (beep_count = 0; beep_count < 1000; beep_count++){ 
 
@@ -95,9 +95,8 @@ int beep_count;
                     
                 }      
                 ets_delay_us(1);
-            }  
+        }  
 }
-
 
 void accel_interrupt(void *sp){
 
@@ -148,45 +147,47 @@ void accel_interrupt(void *sp){
     	    is_y_low = (fabs(y) < 0.15);
     	    is_z_low = (fabs(z) < 0.15);
 
-			if (is_z_low && is_y_low && !z_fired && !is_x_low)
-    		{
-				leds_on(true);	
-				z_fired = 1;
-				beep();
-			}
-			else if(!is_z_low && is_y_low && !is_x_low )
-			{
-				leds_on(false);
-				z_fired = 0;
-			}
-	
-			else if (is_z_low && is_x_low && !x_fired && !is_y_low)
-    		{
-				leds_on(true);
-				x_fired = 1;
-				beep();
-			}
-			else if(!is_z_low && is_x_low && !is_y_low)
-			{
-				leds_on(false);
-				x_fired = 0;
-			}
+			if((x < 1.3 && y < 1.3 && z < 1.3) && (x > -1.3 && y > -1.3 && z > -1.3)){
 
-			else if ((is_z_low && !is_x_low && !y_fired))
-    		{
-				leds_on(true);
-				y_fired = 1;
-				beep();
-			}
-			else if((!is_z_low && !is_x_low && !is_y_low))
-			{
-				leds_on(false);
-				y_fired = 0;
+				if (is_z_low && is_y_low && !z_fired && !is_x_low)
+				{
+					leds_on(true);	
+					z_fired = 1;
+					beep();
+				}
+				else if(!is_z_low && is_y_low && !is_x_low )
+				{
+					leds_on(false);
+					z_fired = 0;
+				}
+		
+				else if (is_z_low && is_x_low && !x_fired && !is_y_low)
+				{
+					leds_on(true);
+					x_fired = 1;
+					beep();
+				}
+				else if(!is_z_low && is_x_low && !is_y_low)
+				{
+					leds_on(false);
+					x_fired = 0;
+				}
+
+				else if ((is_z_low && !is_x_low && !y_fired))
+				{
+					leds_on(true);
+					y_fired = 1;
+					beep();
+				}
+				else if((!is_z_low && !is_x_low && !is_y_low))
+				{
+					leds_on(false);
+					y_fired = 0;
+				}
 			}
 		}
 	}
 }
-
 
 void accel_init(spi_device_handle_t spi){
 
@@ -252,6 +253,14 @@ void accel_init(spi_device_handle_t spi){
 		.length = 8,
 		.tx_buffer = act_inact_ctl
 	};
+	
+	uint8_t int_src_buff[1];
+
+	spi_transaction_t clear_int_src = {  //read interrupts source register to clear it
+		.cmd = 0x80 | 0x40 | 0x30u,
+		.length = 8,
+		.rx_buffer = int_src_buff
+	};
 
 	spi_device_polling_transmit(spi, &adx_setbw);
 	spi_device_polling_transmit(spi, &adx_dataformat);
@@ -260,7 +269,25 @@ void accel_init(spi_device_handle_t spi){
 	spi_device_polling_transmit(spi, &adx_int_map);
 	spi_device_polling_transmit(spi, &adx_int1_en);
 	spi_device_polling_transmit(spi, &adx_set_pow_ctl);
+	spi_device_polling_transmit(spi, &clear_int_src);
 }
+
+void accel_keep_alive_crutch(void *spi){
+
+	uint8_t int_src_buff[1];
+	memset(int_src_buff, 0, sizeof(int_src_buff));
+
+	spi_transaction_t int_src = {
+		.cmd = 0x80 | 0x40 | 0x30u,
+		.length = 8,
+		.rx_buffer = int_src_buff, 
+	};
+	while(true){
+		vTaskDelay(200 / portTICK_PERIOD_MS);
+		spi_device_polling_transmit(spi, &int_src);
+	}
+}
+
 
 void app_main(void){
 
@@ -274,7 +301,7 @@ void app_main(void){
 	gpio_set_direction(EN_AMP, GPIO_MODE_OUTPUT);
     gpio_set_level(EN_AMP, 1);
     dac_output_enable(DAC_CHANNEL_1);
-	vTaskDelay(5 / portTICK_PERIOD_MS);
+	vTaskDelay(1000 / portTICK_PERIOD_MS);
 
 
 	gpio_config_t int_conf = {
@@ -315,10 +342,10 @@ void app_main(void){
 
 	interruptQueue = xQueueCreate(10, sizeof(int));
 
-	accel_init(spi);
-
-
 	xTaskCreate(accel_interrupt, "accell task", 2048, spi, 1, NULL);
+	xTaskCreate(accel_keep_alive_crutch, "accell crutch task", 2048, spi, 1, NULL);
+
+	accel_init(spi);
 
 }
 

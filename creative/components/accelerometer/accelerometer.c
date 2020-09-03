@@ -12,7 +12,7 @@ void accel_init(spi_device_handle_t spi){
 	};
  
 	uint8_t powctlbuff[1];
-	powctlbuff[0] = 0b0001100;  // set link,measure,sleep,wakeup stuff. We need measurement mode
+	powctlbuff[0] = 0b0001000;  // set link,measure,sleep,wakeup stuff. We need measurement mode
 
 	spi_transaction_t adx_set_pow_ctl = {
 		.cmd = 0x2Du,
@@ -57,7 +57,7 @@ void accel_init(spi_device_handle_t spi){
 	};
 
 	uint8_t act_inact_ctl[1];
-	act_inact_ctl[0] = 0b11000000;    // activate or deactivate axis interrupts
+	act_inact_ctl[0] = 0b10010000;    // activate or deactivate axis interrupts
 
 	spi_transaction_t  adx_act_inact = {  
 		.cmd = 0x27u,
@@ -83,5 +83,3 @@ void accel_init(spi_device_handle_t spi){
 	spi_device_polling_transmit(spi, &clear_int_src);
 
 }
-
-

@@ -46,18 +46,14 @@ void butt1_pushed()
 
 			count = 0;
 
-			while(count != 1){
-				if(count > 1){
-					count = 0;
-				}
+			while(gpio_get_level(pin) != 1 && count < 10){
+
 				if(gpio_get_level(pin) == 0){
-					count++;
+					vTaskDelay(10/portTICK_PERIOD_MS);
+					count = 0;
 				}
 				else if(gpio_get_level(pin) == 1){
 					count++;
-					vTaskDelay(15/portTICK_PERIOD_MS);
-					if(gpio_get_level(pin) == 1)
-						count = 1;
 				}				
 			}
 			gpio_intr_enable(pin);	
@@ -80,19 +76,15 @@ void butt2_pushed()
 			beep();
 			count = 0;
 
-			while(count != 1){
-				if(count > 1){
-					count = 0;
-				}
+			while(gpio_get_level(pin) != 1 && count < 10){
+
 				if(gpio_get_level(pin) == 0){
-					count++;
+					vTaskDelay(10/portTICK_PERIOD_MS);
+					count = 0;
 				}
 				else if(gpio_get_level(pin) == 1){
 					count++;
-					vTaskDelay(15/portTICK_PERIOD_MS);
-					if(gpio_get_level(pin) == 1)
-						count = 1;
-				}			
+				}				
 			}
 			gpio_intr_enable(pin);	
 		}
@@ -134,10 +126,12 @@ void accel_flipped(void *spi){
 
 			y = (double)buff[1]/256.0;
 
-			if (y > 0)
+			if (y > 1.05){
 				oled_orientation = OLED_REVERSE;
-			else if (y < 0)
-				oled_orientation = OLED_NORMAL;
+			}
+			else if (y < -0.9){
+				oled_orientation = OLED_NORMAL;	
+			}
 		}
 	}
 }
@@ -186,6 +180,21 @@ void measure(){
 	}
 }
 
+void accel_keep_alive_crutch(void *spi){
+
+	uint8_t int_src_buff[1];
+	memset(int_src_buff, 0, sizeof(int_src_buff));
+
+	spi_transaction_t int_src = {
+		.cmd = 0x80 | 0x40 | 0x30u,
+		.length = 8,
+		.rx_buffer = int_src_buff, 
+	};
+	while(true){
+		spi_device_polling_transmit(spi, &int_src);
+		vTaskDelay(200 / portTICK_PERIOD_MS);
+	}
+}
 
 int ignite_parts(){
 
@@ -302,6 +311,7 @@ int ignite_parts(){
 	xTaskCreatePinnedToCore(butt1_pushed, "button 1 task", 2048, NULL, 1, NULL, 1);
 	xTaskCreatePinnedToCore(butt2_pushed, "button 2 task", 2048, NULL, 1, NULL, 1);
 	xTaskCreatePinnedToCore(accel_flipped, "accelerometer task", 2048, spi, 1, NULL, 1);
+	xTaskCreatePinnedToCore(accel_keep_alive_crutch, "accelerometer crutch task", 2048, spi, 1, NULL, 1);
 	xTaskCreate(measure, "measure task", 2048, NULL, 1, NULL);
 
 	return(ESP_OK);
@@ -334,8 +344,8 @@ void app_main(void){
 	while(true){
 
 		if(oled_orientation != oled_orientation_prev){
-			oled_reverse(oled_orientation);
 			oled_orientation_prev = oled_orientation;
+			oled_reverse(oled_orientation);
 		}
 		if(oled_page == 0){
 			if(temperature != 0){
@@ -358,6 +368,7 @@ void app_main(void){
 			}
 		}
 		else if(oled_page == DHT_RETARD){
+			clear_oled();
 			display_str("Wait for dht...", 3, 1, 7);
 		}
 		vTaskDelay(100 / portTICK_PERIOD_MS);

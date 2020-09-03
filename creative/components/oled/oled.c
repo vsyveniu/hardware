@@ -29,7 +29,7 @@ int init_oled(){
 
 	}
 
-	i2c_master_write_byte(cmd, 0x00, true); // command stream
+	i2c_master_write_byte(cmd, 0x00, true); 
     i2c_master_write_byte(cmd, 0xAE, true); // display off
     i2c_master_write_byte(cmd, 0xD5, true); // clock divide
     i2c_master_write_byte(cmd, 0x80, true);

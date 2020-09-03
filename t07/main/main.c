@@ -1,15 +1,9 @@
 #include "main.h"
+
 #define EN_OLED GPIO_NUM_32
 #define I2C_SDA GPIO_NUM_21
 #define I2C_SCL GPIO_NUM_22
 #define OLED_ADDR 0x3c
-#define CHARGE_PUMP_VAL 0x33
-#define CHARGE_PUMP_ON 0x32
-#define CONTROL_ZERO 0x00
-#define OLED_ON 0xAF
-#define OLED_OFF 0xAE
-#define OLED_FORCE_ON 0xA5
-
 
 void create_load(uint8_t *arr, char *str, int len){
 	int start = 0;
@@ -35,10 +29,11 @@ void create_load(uint8_t *arr, char *str, int len){
 	}	
 }
 
-void init(){
+int init(){
 
 	esp_err_t err;
 	i2c_cmd_handle_t cmd;
+
 	i2c_config_t i2c_conf = {
 		.mode = I2C_MODE_MASTER,
 		.sda_io_num = I2C_SDA,
@@ -48,51 +43,53 @@ void init(){
 		.master.clk_speed = 1000000,
 	};
 	err = i2c_param_config(I2C_NUM_0, &i2c_conf);
-
 	err = i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
+
 	if(err != ESP_OK)
-		printf("%s", "fuck");
+		return (ESP_FAIL);
 
 	cmd = i2c_cmd_link_create();
 	i2c_master_start(cmd);
 
-
-
 	err = i2c_master_write_byte(cmd, (OLED_ADDR << 1) | I2C_MASTER_WRITE, true);
 	if(err != ESP_OK){
-		printf("%s", "fuck");
+		return (ESP_FAIL);
 	}
 
-	i2c_master_write_byte(cmd, 0x00, true); // command stream
-    i2c_master_write_byte(cmd, 0xAE, true); // off
-    i2c_master_write_byte(cmd, 0xD5, true); // clock div
+	i2c_master_write_byte(cmd, 0x00, true); 
+    i2c_master_write_byte(cmd, 0xAE, true); // display off
+    i2c_master_write_byte(cmd, 0xD5, true); // clock divide
     i2c_master_write_byte(cmd, 0x80, true);
-    i2c_master_write_byte(cmd, 0xA8, true); // multiplex
-    i2c_master_write_byte(cmd, 0xFF, true);
-    i2c_master_write_byte(cmd, 0x8D, true); // charge pump
+	i2c_master_write_byte(cmd, 0xA8, true); // multiplex
+    i2c_master_write_byte(cmd, 0x3F, true);
+	i2c_master_write_byte(cmd, 0x8D, true); // charge pump 
     i2c_master_write_byte(cmd, 0x14, true);
+	i2c_master_write_byte(cmd, 0xD3, true); // display offset
+    i2c_master_write_byte(cmd, 0x00, true);
+	i2c_master_write_byte(cmd, 0x40, true); // display start line
+    i2c_master_write_byte(cmd, 0x00, true);
     i2c_master_write_byte(cmd, 0x10, true); // high column
     i2c_master_write_byte(cmd, 0xB0, true);
-    i2c_master_write_byte(cmd, 0xC8, true);  //reverse page order (from up to down)
-    i2c_master_write_byte(cmd, 0x00, true); // low column
+    i2c_master_write_byte(cmd, 0xC8, true); //normal page order (from up to down)
+	i2c_master_write_byte(cmd, 0x00, true); // low column
     i2c_master_write_byte(cmd, 0x10, true);
-    i2c_master_write_byte(cmd, 0x40, true);
-    i2c_master_write_byte(cmd, 0xA1, true); // segment remap
-    i2c_master_write_byte(cmd, 0xA6, true);
-    i2c_master_write_byte(cmd, 0x81, true); // contrast
+	i2c_master_write_byte(cmd, 0x22, true); // pre charge period
+	i2c_master_write_byte(cmd, 0xF1, true); 
+	i2c_master_write_byte(cmd, 0x35, true); // VCOM deselect level
+	i2c_master_write_byte(cmd, 0x40, true); 
+	i2c_master_write_byte(cmd, 0x81, true); // set contrast. Maximum contrast to burn eyes!
     i2c_master_write_byte(cmd, 0xFF, true);
-    i2c_master_write_byte(cmd, 0xAF, true); // on0xA1
+	i2c_master_write_byte(cmd, 0xA4, true); // entire display on 
+    i2c_master_write_byte(cmd, 0xA1, true); // normal screen orientation
+    i2c_master_write_byte(cmd, 0xA6, true);
+    i2c_master_write_byte(cmd, 0xAF, true); // display on
     i2c_master_stop(cmd);
     i2c_master_cmd_begin(I2C_NUM_0, cmd, 10 / portTICK_PERIOD_MS);
     i2c_cmd_link_delete(cmd);
 
-
-	if (err == ESP_OK) {
-		ESP_LOGI("tag", "OLED configured successfully");
-	} else {
-		ESP_LOGE("tag", "OLED configuration failed. code: 0x%.2X", err);
-	}
-
+	if (err == !ESP_OK)
+		return (ESP_FAIL);
+	return (ESP_OK);
 }
 
 void write_page(uint8_t *data, uint8_t page) {
@@ -115,25 +112,23 @@ void clear_all(){
         for (uint8_t x = 0; x < 128; x++) {
 			  buff[y][x] = 0b00000000;
 			  write_page(&buff[y][x], y);
-            
-
         }
     }
 }
 
 void app_main(void){
 
-
 	gpio_set_direction(EN_OLED, GPIO_MODE_OUTPUT);
 	gpio_set_level(EN_OLED, 1);
 	vTaskDelay(2000 / portTICK_PERIOD_MS);
 
-	
-	init();
+	if(init() != ESP_OK){
+		printf("%s\n", "Oled is dead");
+		esp_restart();
+	}
 	clear_all();
  
 	uint8_t arr[8][128];
-
 
 	for (uint8_t y = 0; y < 8; y++) {
         for (uint8_t x = 0; x < 128; x++) {
@@ -177,22 +172,14 @@ void app_main(void){
 		i++;
 	}
 
-	for (uint8_t y = 0; y < 8; y++) {
-	
+	for (uint8_t y = 0; y < 8; y++){
 		create_load(arr[y], bunchs[y], strlen(bunchs[y]));
-
     }
 
-
-//	int y = 0;
-//	while(y < 8){
-	for (uint8_t x = 0; x < 128; x++) {
+	for (uint8_t x = 0; x < 128; x++){
 			write_page(&arr[0][x], 3);
 			vTaskDelay(20 / portTICK_PERIOD_MS);
     }
-//		y++;
-//	}
-
 
 }
 
